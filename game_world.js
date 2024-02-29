@@ -149,6 +149,10 @@ class Simulation {
         this.ground_kd = 0;
         this.integ_tech = 0;
         this.timestep = 0;
+        this.accel_pressed = false;
+        this.brake_pressed = false;
+        this.left_pressed = false;
+        this.right_pressed = false;
     }
 
     update(dt) {
@@ -169,6 +173,15 @@ class Simulation {
                     unit_nor.times(this.ground_kd * (p.vel.dot(unit_nor))));
                 p.ext_force.add_by(nor_force);
             }
+            if (this.accel_pressed)
+                p.ext_force.add_by(vec3(0, 0, 1));
+            if (this.brake_pressed)
+                p.ext_force.add_by(vec3(0, 0, -1));
+            if (this.left_pressed)
+                p.ext_force.add_by(vec3(1, 0, 0));
+            if (this.right_pressed)
+                p.ext_force.add_by(vec3(-1, 0, 0));
+
         }
         for (const s of this.springs) {
             s.update();
@@ -219,17 +232,16 @@ const game_world_base = defs.game_world_base =
 
             // TODO: you should create the necessary shapes
             this.spline = new Spline();
-            this.spline.add_point(0.0, 7.0, 0.0,-12.0, -3.0, 12.0);
-            this.spline.add_point(0.0, 6.0, 4.0, 9.0, -3.0, 9.0 );
-            this.spline.add_point(3.0, 5.0, 4.0, 9.0, -3.0, -9.0);
-            this.spline.add_point(3.0, 4.0, 0.0, -12.0, -3.0, -12.0);
+            this.spline.add_point(-5, 2, 0,10, 0, 0);
+            this.spline.add_point(0, 2, 0, 10, 0, 0);
+            this.spline.add_point(5, 2, 0, 10, 0, 0);
             const curve_fn = (t) => this.spline.get_position(t);
             this.curve = new Curve_Shape(curve_fn, 1000);
             this.simulation = new Simulation();
             this.simulation.particles.push(new Particle());
             this.simulation.particles[0].mass = 1.0;
-            this.simulation.particles[0].pos = vec3(0.0, 7.0, 0.0);
-            this.simulation.particles[0].vel = vec3(0.0, 0.0, 0.0);
+            this.simulation.particles[0].pos = vec3(0, 0, 0.0);
+            this.simulation.particles[0].vel = vec3(0, 0.0, 0.0);
             this.simulation.particles[0].valid = true;
             this.simulation.g_acc = vec3(0, -9.8, 0);
             this.simulation.ground_ks = 15000;
@@ -258,7 +270,7 @@ const game_world_base = defs.game_world_base =
 
                 // !!! Camera changed here
                 Shader.assign_camera( Mat4.look_at (
-                    this.simulation.particles[0].pos.plus(vec3(10, 5, 10)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
+                    this.simulation.particles[0].pos.minus(vec3(0, -5, 10)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
             }
             this.uniforms.projection_transform = Mat4.perspective( Math.PI/4, caller.width/caller.height, 1, 100 );
 
@@ -320,11 +332,13 @@ export class game_world extends game_world_base
         let t_step = t;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
+        let part_vel_xz = this.simulation.particles[0].vel;
+        //part_vel_xz[1] =
         Shader.assign_camera( Mat4.look_at (
-            this.simulation.particles[0].pos.plus(vec3(10, 5, 10)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
+            this.simulation.particles[0].pos.plus(vec3(0, 5, -10)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
 
         // !!! Draw ground
-        let floor_transform = Mat4.translation(0, 0, 0).times(Mat4.scale(10, 0.01, 10));
+        let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(10, 0.01, 10));
         this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
 
         // !!! Draw ball (for reference)
@@ -338,7 +352,7 @@ export class game_world extends game_world_base
         const t_next = t_step + dt;
         while (t_step < t_next) {
             this.simulation.update(this.simulation.timestep);
-            this.simulation.particles[0].pos = this.spline.get_position(Math.sin(t / 4) ** 2);
+            //this.simulation.particles[0].pos = this.spline.get_position(Math.sin(t / 4) ** 2);
             //console.log(Math.sin(t / 50) ** 2);
             t_step += this.simulation.timestep;
         }
@@ -376,6 +390,21 @@ export class game_world extends game_world_base
         // buttons with key bindings for affecting this scene, and live info readouts.
         this.control_panel.innerHTML += "Part Three: (no buttons)";
         this.new_line();
+
+        this.key_triggered_button("Accelerate", ["i"],
+            () => this.simulation.accel_pressed = true, "#6E6460",
+            () => this.simulation.accel_pressed = false);
+        this.key_triggered_button("Brake", ["k"],
+            () => this.simulation.brake_pressed = true, "#6E6460",
+            () => this.simulation.brake_pressed = false);
+        this.new_line();
+        this.key_triggered_button("Left", ["j"],
+            () => this.simulation.left_pressed = true, "#6E6460",
+            () => this.simulation.left_pressed = false);
+        this.new_line();
+        this.key_triggered_button("Right", ["l"],
+            () => this.simulation.right_pressed = true, "#6E6460",
+            () => this.simulation.right_pressed = false);
 
 
         /* Some code for your reference
