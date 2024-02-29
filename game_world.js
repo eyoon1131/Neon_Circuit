@@ -90,6 +90,7 @@ class Particle {
         this.acc = vec3(0, 0, 0);
         this.ext_force = vec3(0, 0, 0);
         this.valid = false;
+        this.forward_dir = vec3(0, 0, 0);
     }
 
     update(sim, dt) {
@@ -100,18 +101,34 @@ class Particle {
             this.acc = this.ext_force.times(1.0 / this.mass);
             this.pos = this.pos.plus(this.vel.times(dt));
             this.vel = this.vel.plus(this.acc.times(dt));
+            if (this.vel.norm() > 30)
+                this.vel = this.vel.normalized().times(30);
         }
         else if (sim.integ_tech === 2) {
             this.acc = this.ext_force.times(1.0 / this.mass);
             this.vel = this.vel.plus(this.acc.times(dt));
+            if (this.vel.norm() > 30)
+                this.vel = this.vel.normalized().times(30);
             this.pos = this.pos.plus(this.vel.times(dt));
         }
         else if (sim.integ_tech === 3) {
             this.pos = this.pos.plus(this.vel.times(dt)).plus(this.acc.times(dt**2 / 2));
             const new_acc = this.ext_force.times(1.0 / this.mass);
             this.vel = this.vel.plus(this.acc.plus(new_acc).times(dt / 2));
+            if (this.vel.norm() > 30)
+                this.vel = this.vel.normalized().times(30);
             this.acc = new_acc;
         }
+        if (this.pos[1] < 0)
+            this.pos[1] = 0;
+        //console.log(this.pos)
+        if (this.vel[0] !== 0 || this.vel[2] !== 0) {
+            const vel_zx = this.vel.normalized();
+            //vel_zx[1] = 0;
+            if (this.forward_dir.dot(vel_zx) > 0)
+                this.forward_dir = vel_zx;
+        }
+        console.log(this.vel.norm())
     }
 }
 
@@ -153,6 +170,8 @@ class Simulation {
         this.brake_pressed = false;
         this.left_pressed = false;
         this.right_pressed = false;
+        this.u_static = 0;
+        this.u_kinetic = 0;
     }
 
     update(dt) {
@@ -161,26 +180,48 @@ class Simulation {
             p.ext_force = this.g_acc.times(p.mass);
             // add ground collision and damping
             // calculate ground forces
-            let next_pos = p.pos.plus(p.vel.times(dt));
-            if (next_pos[1] < 0) {
-                const unit_nor = vec3(0, 1, 0);
-                const collision_dt = (p.pos[1] / (p.pos[1] - next_pos[1])) * dt;
-                const collision_pos = p.pos.plus(p.vel.times(collision_dt));
-                let deflected_vec = next_pos.minus(collision_pos);
-                deflected_vec[1] = -deflected_vec[1];
-                //const exit_pos = next_pos.plus(deflected_vec);
-                const nor_force = unit_nor.times(this.ground_ks * (deflected_vec.dot(unit_nor))).minus(
-                    unit_nor.times(this.ground_kd * (p.vel.dot(unit_nor))));
-                p.ext_force.add_by(nor_force);
+            // let next_pos = p.pos.plus(p.vel.times(dt));
+            // if (next_pos[1] < 0) {
+            //     const unit_nor = vec3(0, 1, 0);
+            //     const collision_dt = (p.pos[1] / (p.pos[1] - next_pos[1])) * dt;
+            //     const collision_pos = p.pos.plus(p.vel.times(collision_dt));
+            //     let deflected_vec = next_pos.minus(collision_pos);
+            //     deflected_vec[1] = -deflected_vec[1];
+            //     //const exit_pos = next_pos.plus(deflected_vec);
+            //     const nor_force = unit_nor.times(this.ground_ks * (deflected_vec.dot(unit_nor))).minus(
+            //         unit_nor.times(this.ground_kd * (p.vel.dot(unit_nor))));
+            //     console.log(p.ext_force)
+            //     p.ext_force.add_by(nor_force);
+            //     console.log(p.ext_force)
+            // }
+
+            //let vel_zx = this.vel;
+            //vel_zx[1] = 0;
+            const vel_unit = p.vel.normalized();
+
+            const norm_force = p.ext_force.times(-1);
+            p.ext_force.add_by(norm_force);
+            //console.log(p.ext_force)
+            //console.log(p.vel)
+            const kin_friction = norm_force.norm() * this.u_kinetic;
+            if (p.vel.norm() !== 0)
+                p.ext_force.add_by(vel_unit.times(-kin_friction));
+
+            //console.log(p.ext_force)
+
+            let stat_friction = norm_force.norm() * this.u_static * p.vel.norm() ** 2 / 10.0;
+
+            if (this.accel_pressed) {
+                p.ext_force.add_by(p.forward_dir.times(10.0));
             }
-            if (this.accel_pressed)
-                p.ext_force.add_by(vec3(0, 0, 1));
-            if (this.brake_pressed)
-                p.ext_force.add_by(vec3(0, 0, -1));
-            if (this.left_pressed)
-                p.ext_force.add_by(vec3(1, 0, 0));
+            // else if (this.brake_pressed)
+            //     p.ext_force.subtract_by(p.forward_dir.times(2.0));
             if (this.right_pressed)
-                p.ext_force.add_by(vec3(-1, 0, 0));
+                p.ext_force.add_by(p.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
+            else if (this.left_pressed)
+                p.ext_force.subtract_by(p.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
+
+           // console.log(p.ext_force)
 
         }
         for (const s of this.springs) {
@@ -240,14 +281,17 @@ const game_world_base = defs.game_world_base =
             this.simulation = new Simulation();
             this.simulation.particles.push(new Particle());
             this.simulation.particles[0].mass = 1.0;
-            this.simulation.particles[0].pos = vec3(0, 0, 0.0);
+            this.simulation.particles[0].pos = vec3(5, 0, -5);
             this.simulation.particles[0].vel = vec3(0, 0.0, 0.0);
             this.simulation.particles[0].valid = true;
+            this.simulation.particles[0].forward_dir = vec3(1, 0, 0);
             this.simulation.g_acc = vec3(0, -9.8, 0);
-            this.simulation.ground_ks = 15000;
-            this.simulation.ground_kd = 2000;
+            this.simulation.ground_ks = 5000;
+            this.simulation.ground_kd = 10;
             this.simulation.integ_tech = 2;
             this.simulation.timestep = 0.001;
+            this.simulation.u_kinetic = 0.8;
+            this.simulation.u_static = 0.6;
         }
 
         render_animation( caller )
@@ -270,7 +314,7 @@ const game_world_base = defs.game_world_base =
 
                 // !!! Camera changed here
                 Shader.assign_camera( Mat4.look_at (
-                    this.simulation.particles[0].pos.minus(vec3(0, -5, 10)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
+                    this.simulation.particles[0].pos.minus(vec3(10, -5, 0)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
             }
             this.uniforms.projection_transform = Mat4.perspective( Math.PI/4, caller.width/caller.height, 1, 100 );
 
@@ -332,13 +376,18 @@ export class game_world extends game_world_base
         let t_step = t;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
-        let part_vel_xz = this.simulation.particles[0].vel;
+        //let part_vel_xz = this.simulation.particles[0].vel;
         //part_vel_xz[1] =
+        const car = this.simulation.particles[0];
+        const at = car.pos;
+        //const eye = at.minus(car.forward_dir)
+        const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+        //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
         Shader.assign_camera( Mat4.look_at (
-            this.simulation.particles[0].pos.plus(vec3(0, 5, -10)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
+            at.minus(eye_to_at), at, vec3 (0, 1, 0)), this.uniforms );
 
         // !!! Draw ground
-        let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(10, 0.01, 10));
+        let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
         this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
 
         // !!! Draw ball (for reference)
@@ -357,11 +406,20 @@ export class game_world extends game_world_base
             t_step += this.simulation.timestep;
         }
         // from discussion slides
+        //console.log("render");
         for (const p of this.simulation.particles) {
             const pos = p.pos;
-            let model_transform = Mat4.scale(0.2, 0.2, 0.2);
+            let model_transform = Mat4.scale(1, 0.2, 0.2);
+            let theta = Math.acos(p.forward_dir.dot(vec3(1, 0, 0)));
+            // if z < 0, then forward_dir is more than 180 degrees ccw of x-axis
+            if (p.forward_dir[2] < 0)
+                theta = (2 * Math.PI - theta);
+            // p.forward_dir[2] = Math.cos(-theta) * p.forward_dir[2] - Math.sin(-theta) * p.forward_dir[0];
+            // p.forward_dir[0] = Math.sin(-theta) * p.forward_dir[2] + Math.cos(-theta) * p.forward_dir[0];
+            // p.forward_dir.normalize();
+            model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
-            this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
+            this.shapes.box.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
         }
         for (const s of this.simulation.springs) {
             const p1 = s.particle1.pos;
