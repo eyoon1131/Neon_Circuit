@@ -89,8 +89,8 @@ class Particle {
         this.vel = vec3(0, 0, 0);
         this.acc = vec3(0, 0, 0);
         this.ext_force = vec3(0, 0, 0);
-        this.valid = false;
         this.forward_dir = vec3(0, 0, 0);
+        this.valid = false;
     }
 
     update(sim, dt) {
@@ -132,6 +132,23 @@ class Particle {
     }
 }
 
+// class Car extends Particle {
+//     constructor() {
+//         super();
+//         this.forward_dir = vec3(0, 0, 0);
+//     }
+//     update(sim, dt) {
+//         super.update(sim, dt);
+//         if (this.vel[0] !== 0 || this.vel[2] !== 0) {
+//             const vel_zx = this.vel.normalized();
+//             //vel_zx[1] = 0;
+//             if (this.forward_dir.dot(vel_zx) > 0)
+//                 this.forward_dir = vel_zx;
+//         }
+//         console.log(this.vel.norm())
+//     }
+// }
+
 class Spring {
     constructor() {
         this.particle1 = null;
@@ -159,6 +176,7 @@ class Spring {
 
 class Simulation {
     constructor() {
+        //this.car = null;
         this.particles = [];
         this.springs = [];
         this.g_acc = vec3(0, 0, 0);
@@ -387,7 +405,7 @@ export class game_world extends game_world_base
             at.minus(eye_to_at), at, vec3 (0, 1, 0)), this.uniforms );
 
         // !!! Draw ground
-        let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
+        let floor_transform = Mat4.translation(0, -0.2, 0).times(Mat4.scale(100, 0.01, 100));
         this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
 
         // !!! Draw ball (for reference)
@@ -407,20 +425,20 @@ export class game_world extends game_world_base
         }
         // from discussion slides
         //console.log("render");
-        for (const p of this.simulation.particles) {
-            const pos = p.pos;
-            let model_transform = Mat4.scale(1, 0.2, 0.2);
-            let theta = Math.acos(p.forward_dir.dot(vec3(1, 0, 0)));
-            // if z < 0, then forward_dir is more than 180 degrees ccw of x-axis
-            if (p.forward_dir[2] < 0)
-                theta = (2 * Math.PI - theta);
-            // p.forward_dir[2] = Math.cos(-theta) * p.forward_dir[2] - Math.sin(-theta) * p.forward_dir[0];
-            // p.forward_dir[0] = Math.sin(-theta) * p.forward_dir[2] + Math.cos(-theta) * p.forward_dir[0];
-            // p.forward_dir.normalize();
-            model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
-            model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
-            this.shapes.box.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
-        }
+        //for (const p of this.simulation.particles) {
+        const pos = car.pos;
+        let model_transform = Mat4.scale(0.2, 0.2, 0.2);
+        let theta = Math.acos(car.forward_dir.dot(vec3(1, 0, 0)));
+        // if z < 0, then forward_dir is more than 180 degrees ccw of x-axis
+        if (car.forward_dir[2] < 0)
+            theta = (2 * Math.PI - theta);
+        // p.forward_dir[2] = Math.cos(-theta) * p.forward_dir[2] - Math.sin(-theta) * p.forward_dir[0];
+        // p.forward_dir[0] = Math.sin(-theta) * p.forward_dir[2] + Math.cos(-theta) * p.forward_dir[0];
+        // p.forward_dir.normalize();
+        model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
+        model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
+        this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
+        //}
         for (const s of this.simulation.springs) {
             const p1 = s.particle1.pos;
             const p2 = s.particle2.pos;
