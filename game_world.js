@@ -117,8 +117,12 @@ const game_world_base = defs.game_world_base =
                 // perspective() are field of view, aspect ratio, and distances to the near plane and far plane.
 
                 // !!! Camera changed here
+                const car = this.simulation.particles[0];
+                const at = car.pos;
+                //const eye = at.minus(car.forward_dir)
+                const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
                 Shader.assign_camera( Mat4.look_at (
-                    this.simulation.particles[0].pos.minus(vec3(10, -5, 0)), this.simulation.particles[0].pos, vec3 (0, 1, 0)), this.uniforms );
+                    at.minus(eye_to_at), at, vec3 (0, 1, 0)), this.uniforms );
             }
             this.uniforms.projection_transform = Mat4.perspective( Math.PI/4, caller.width/caller.height, 1, 100 );
 
