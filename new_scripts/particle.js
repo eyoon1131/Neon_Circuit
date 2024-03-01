@@ -96,17 +96,23 @@ export class Particle {
 export class Car extends Particle {
     constructor() {
         super();
-        this.forward_dir = vec3(0, 0, 0);
+        this.forward_dir = vec3(0, 0, 0); // need to initialize
+        this.collided = false;
     }
     update(sim, dt) {
         super.update(sim, dt);
+        
         if (this.vel[0] !== 0 || this.vel[2] !== 0) {
             const vel_zx = this.vel.normalized();
             //vel_zx[1] = 0;
-            if (this.forward_dir.dot(vel_zx) > 0)
+            if (this.forward_dir.dot(vel_zx) > 0 && this.collided === false){
                 this.forward_dir = vel_zx;
+                console.log("VEL", this.vel)
+                 console.log("FORWARD", this.forward_dir)
+            }
         }
-        console.log(this.vel.norm())
+        // console.log(this.vel.norm())
+        // console.log(this.ext_force)
     }
 
     handle_inputs(sim) {
@@ -118,7 +124,7 @@ export class Car extends Particle {
             this.ext_force.add_by(this.forward_dir.times(12.0));
         }
         if (sim.brake_pressed)
-            this.ext_force.subtract_by(this.forward_dir.times(5));
+            this.ext_force.subtract_by(this.forward_dir.times(6));
         if (sim.right_pressed)
             this.ext_force.add_by(this.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
         if (sim.left_pressed)

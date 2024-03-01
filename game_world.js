@@ -68,7 +68,7 @@ export
                 let car = this.simulation.particles[0];
                 car.mass = 1.0;
                 // should parameterize this
-                car.pos = vec3(-5, 0.7, 5);
+                car.pos = vec3(-5, 0, 5);
                 car.vel = vec3(0, 0.0, 0.0);
                 car.valid = true;
                 car.forward_dir = vec3(-1, 0, 0);
@@ -87,9 +87,13 @@ export
                 // prepare the track
                 const hermiteCurvePoints = [
                     vec3(-5, -0.1, -5),
-                    vec3(-5, 0.5, 5),
-                    vec3(5, 0.5, 5),
-                    vec3(5, 0.5, -5),
+                    // vec3(-5, 0.5, 5),
+                    // vec3(5, 0.5, 5),
+                    // vec3(5, 0.5, -5),
+                    vec3(-5, -0.1, 5),
+                    vec3(5, -0.1, 5),
+                    vec3(5, -0.1, -5),
+
                     vec3(-5, -0.1, -5)
                 ], hermiteCurveTangents = [
                     vec3(-20, 0, 20),
@@ -101,6 +105,9 @@ export
                 const hermiteFunction =
                     HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
                 this.shapes.track = new Track(2, 0.8, 0.4, 0.1, hermiteFunction, 64);
+
+                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, 2*sim.track_width, 2*car.scale_factors[0]));
+
             }
 
             render_animation(caller) {                                                // display():  Called once per frame of animation.  We'll isolate out
@@ -215,8 +222,6 @@ export class game_world extends game_world_base {                               
             //console.log(Math.sin(t / 50) ** 2);
             t_step += this.simulation.timestep;
             // also handles it
-            detectTrackCollision(car, this.simulation.track_fn, this.simulation.track_width, 0.2);
-
         }
         // from discussion slides
         //console.log("render");

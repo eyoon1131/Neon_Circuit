@@ -2,8 +2,8 @@ import { math } from '../tiny-graphics-math.js';
 import { getFrame, getTimeOnCurve } from '../track/track-generate.js';
 export const tiny = { ...math, math };
 
-const KS = 5000;
-const KD = 100;
+const KS = 5;
+const KD = 1;
 
 
 // assumption: track is closed loop with fixed width
@@ -30,9 +30,15 @@ export function detectTrackCollision(particle, track_function, track_width, car_
     // check if car is outside track
     // let collision = false;
     if (distance + (car_width / 2) >= track_width / 2){
+        console.log("track center", track_center)
         console.log("collision");
+        console.log(distance, track_width / 2, car_width / 2)
+        particle.collided = true;
         handleTrackCollision(particle, track_center, track_horizontal, track_width, car_width, distance)
         // collision = true;
+    }
+    else {
+        particle.collided = false;
     }
     // return collision;
 }
