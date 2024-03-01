@@ -104,9 +104,9 @@ export
                 ];
                 const hermiteFunction =
                     HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
-                this.shapes.track = new Track(2, 0.8, 0.4, 0.1, hermiteFunction, 64);
+                this.shapes.track = new Track(5, 0.8, 0.4, 0.1, hermiteFunction, 64);
 
-                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, 2*sim.track_width, 2*car.scale_factors[0]));
+                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, 5-0.8, 2*car.scale_factors[0]));
 
             }
 

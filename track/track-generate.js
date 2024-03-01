@@ -4,7 +4,7 @@ import { tiny } from '../tiny-graphics.js';
 const { Vector3, Vector4, vec3, vec4, color, Matrix, Mat4, Shape, Shader, Component } = tiny;
 
 const TINY_STEP = 1e-6;
-const SCAN_POINTS = 64.0;
+const SCAN_POINTS = 128.0;
 function _curveDerivative(curveFunction, t) {
     return curveFunction(t + TINY_STEP)
         .minus(curveFunction(t))
