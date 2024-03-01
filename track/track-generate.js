@@ -19,7 +19,7 @@ export function getTimeOnCurve(position, curveFunction) {
     let ans = 0, minPoint = null;
     for (let i = 0; i <= SCAN_POINTS; i++) {
         let currentPoint = curveFunction(step(i));
-        if (!point || // found a point that's closer
+        if (!minPoint || // found a point that's closer
             position.minus(currentPoint).norm() <
             minPoint.minus(currentPoint).norm()) {
             
@@ -37,5 +37,5 @@ export function getFrame(position, curveFunction) {
     const tangent = _curveDerivative(curveFunction, t).normalized();
     const horizontal = tangent.cross(vec3(0,1,0)).normalized();
     const normal = tangent.cross(horizontal).normalized();
-    return [tangent, normal, horizontal];
+    return [tangent, normal, horizontal, point];
 }
