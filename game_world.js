@@ -209,10 +209,10 @@ class Simulation {
 
             //console.log(p.ext_force)
 
-            let stat_friction = norm_force.norm() * this.u_static * p.vel.norm() ** 2 / 10.0;
+            let stat_friction = norm_force.norm() * this.u_static * p.vel.norm() ** 2 / 75.0;
 
             if (this.accel_pressed) {
-                p.ext_force.add_by(p.forward_dir.times(10.0));
+                p.ext_force.add_by(p.forward_dir.times(15.0));
             }
             // else if (this.brake_pressed)
             //     p.ext_force.subtract_by(p.forward_dir.times(2.0));
@@ -281,7 +281,7 @@ const game_world_base = defs.game_world_base =
             this.simulation = new Simulation();
             this.simulation.particles.push(new Particle());
             this.simulation.particles[0].mass = 1.0;
-            this.simulation.particles[0].pos = vec3(5, 0, -5);
+            this.simulation.particles[0].pos = vec3(-50, 0, -5);
             this.simulation.particles[0].vel = vec3(0, 0.0, 0.0);
             this.simulation.particles[0].valid = true;
             this.simulation.particles[0].forward_dir = vec3(1, 0, 0);
