@@ -1,136 +1,14 @@
 import {tiny, defs} from './examples/common.js';
+import {Car, Particle} from "./new_scripts/particle.js";
+import {Spring} from "./new_scripts/spring.js";
+import {Simulation} from "./new_scripts/simulation.js";
+import {Curve_Shape} from "./new_scripts/shapes.js";
+import {Spline} from "./new_scripts/spline.js";
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
 // TODO: you should implement the required classes here or in another file.
-
-class Curve_Shape extends Shape {
-    // curve_function: (t) => vec3
-    constructor(curve_function, sample_count, curve_color=color( 1, 0, 0, 1 )) {
-        super("position", "normal");
-
-        this.material = { shader: new defs.Phong_Shader(), ambient: 1.0, color: curve_color }
-        this.sample_count = sample_count;
-
-        if (curve_function && this.sample_count) {
-            for (let i = 0; i < this.sample_count + 1; i++) {
-                let t = i / this.sample_count;
-                this.arrays.position.push(curve_function(t));
-                this.arrays.normal.push(vec3(0, 0, 0)); // have to add normal to make Phong shader work.
-            }
-        }
-    }
-
-    draw(webgl_manager, uniforms) {
-        // call super with "LINE_STRIP" mode
-        super.draw(webgl_manager, uniforms, Mat4.identity(), this.material, "LINE_STRIP");
-    }
-
-    update(webgl_manager, uniforms, curve_function) {
-        if (curve_function && this.sample_count) {
-            for (let i = 0; i < this.sample_count + 1; i++) {
-                let t = 1.0 * i / this.sample_count;
-                this.arrays.position[i] = curve_function(t);
-            }
-        }
-        // this.arrays.position.forEach((v, i) => v = curve_function(i / this.sample_count));
-        this.copy_onto_graphics_card(webgl_manager.context);
-        // Note: vertex count is not changed.
-        // not tested if possible to change the vertex count.
-    }
-}
-
-class Spline {
-    constructor() {
-        this.points = [];
-        this.tangents = [];
-        this.scaled_tangents = [];
-        this.size = 0;
-    }
-
-    add_point(x, y, z, tx, ty, tz) {
-        this.points.push(vec3(x, y, z));
-        this.tangents.push(vec3(tx, ty, tz));
-        this.scaled_tangents.push(vec3(0, 0, 0));
-        this.size += 1;
-        this.scale_tangents();
-    }
-
-    scale_tangents() {
-        for (let i = 0; i < this.size; i++) {
-            this.scaled_tangents[i] = this.tangents[i].times(1 / (this.size - 1));
-        }
-    }
-
-    get_position(t) {
-        if (this.size < 2) {return vec3(0, 0, 0);}
-
-        const A = Math.floor(t * (this.size - 1)); // A = T(i)
-        const B = Math.ceil(t * (this.size - 1)); // B = T(i + 1)
-        const s = (t * (this.size - 1)) % 1.0 // T - T(i)
-
-        let a = this.points[A].copy();
-        let b = this.points[B].copy();
-        let ta = this.scaled_tangents[A].copy();
-        let tb = this.scaled_tangents[B].copy();
-
-        return a.times(2 * (s ** 3) - 3 * (s ** 2) + 1)
-            .plus(b.times(-2 * (s ** 3) + 3 * (s ** 2)))
-            .plus(ta.times((s ** 3) - 2 * (s ** 2) + s))
-            .plus(tb.times((s ** 3) - (s ** 2)))
-    }
-}
-
-class Particle {
-    constructor() {
-        this.mass = 0;
-        this.pos = vec3(0, 0, 0);
-        this.vel = vec3(0, 0, 0);
-        this.acc = vec3(0, 0, 0);
-        this.ext_force = vec3(0, 0, 0);
-        this.forward_dir = vec3(0, 0, 0);
-        this.valid = false;
-    }
-
-    update(sim, dt) {
-        if (!this.valid)
-            throw "Not initialized"
-        // forward euler
-        if (sim.integ_tech === 1) {
-            this.acc = this.ext_force.times(1.0 / this.mass);
-            this.pos = this.pos.plus(this.vel.times(dt));
-            this.vel = this.vel.plus(this.acc.times(dt));
-            if (this.vel.norm() > 30)
-                this.vel = this.vel.normalized().times(30);
-        }
-        else if (sim.integ_tech === 2) {
-            this.acc = this.ext_force.times(1.0 / this.mass);
-            this.vel = this.vel.plus(this.acc.times(dt));
-            if (this.vel.norm() > 30)
-                this.vel = this.vel.normalized().times(30);
-            this.pos = this.pos.plus(this.vel.times(dt));
-        }
-        else if (sim.integ_tech === 3) {
-            this.pos = this.pos.plus(this.vel.times(dt)).plus(this.acc.times(dt**2 / 2));
-            const new_acc = this.ext_force.times(1.0 / this.mass);
-            this.vel = this.vel.plus(this.acc.plus(new_acc).times(dt / 2));
-            if (this.vel.norm() > 30)
-                this.vel = this.vel.normalized().times(30);
-            this.acc = new_acc;
-        }
-        if (this.pos[1] < 0)
-            this.pos[1] = 0;
-        //console.log(this.pos)
-        if (this.vel[0] !== 0 || this.vel[2] !== 0) {
-            const vel_zx = this.vel.normalized();
-            //vel_zx[1] = 0;
-            if (this.forward_dir.dot(vel_zx) > 0)
-                this.forward_dir = vel_zx;
-        }
-        console.log(this.vel.norm())
-    }
-}
 
 // class Car extends Particle {
 //     constructor() {
@@ -148,108 +26,6 @@ class Particle {
 //         console.log(this.vel.norm())
 //     }
 // }
-
-class Spring {
-    constructor() {
-        this.particle1 = null;
-        this.particle2 = null;
-        this.ks = 0;
-        this.kd = 0;
-        this.rest_length = 0;
-        this.valid = false;
-    }
-
-    update() {
-        if (!this.valid)
-            throw "Not initialized"
-        const d_ij_vec = this.particle2.pos.minus(this.particle1.pos);
-        const d_ij = d_ij_vec.norm();
-        const d_ij_unit = d_ij_vec.times(1.0 / d_ij);
-        const v_ij_vec = this.particle2.vel.minus(this.particle1.vel);
-        const fs_ij = d_ij_unit.times(this.ks * (d_ij - this.rest_length));
-        const fd_ij = d_ij_unit.times(this.kd * v_ij_vec.dot(d_ij_unit));
-        const fe_ij = fs_ij.plus(fd_ij);
-        this.particle1.ext_force.add_by(fe_ij);
-        this.particle2.ext_force.subtract_by(fe_ij);
-    }
-}
-
-class Simulation {
-    constructor() {
-        //this.car = null;
-        this.particles = [];
-        this.springs = [];
-        this.g_acc = vec3(0, 0, 0);
-        this.ground_ks = 0;
-        this.ground_kd = 0;
-        this.integ_tech = 0;
-        this.timestep = 0;
-        this.accel_pressed = false;
-        this.brake_pressed = false;
-        this.left_pressed = false;
-        this.right_pressed = false;
-        this.u_static = 0;
-        this.u_kinetic = 0;
-    }
-
-    update(dt) {
-        for (const p of this.particles) {
-            // add gravity
-            p.ext_force = this.g_acc.times(p.mass);
-            // add ground collision and damping
-            // calculate ground forces
-            // let next_pos = p.pos.plus(p.vel.times(dt));
-            // if (next_pos[1] < 0) {
-            //     const unit_nor = vec3(0, 1, 0);
-            //     const collision_dt = (p.pos[1] / (p.pos[1] - next_pos[1])) * dt;
-            //     const collision_pos = p.pos.plus(p.vel.times(collision_dt));
-            //     let deflected_vec = next_pos.minus(collision_pos);
-            //     deflected_vec[1] = -deflected_vec[1];
-            //     //const exit_pos = next_pos.plus(deflected_vec);
-            //     const nor_force = unit_nor.times(this.ground_ks * (deflected_vec.dot(unit_nor))).minus(
-            //         unit_nor.times(this.ground_kd * (p.vel.dot(unit_nor))));
-            //     console.log(p.ext_force)
-            //     p.ext_force.add_by(nor_force);
-            //     console.log(p.ext_force)
-            // }
-
-            //let vel_zx = this.vel;
-            //vel_zx[1] = 0;
-            const vel_unit = p.vel.normalized();
-
-            const norm_force = p.ext_force.times(-1);
-            p.ext_force.add_by(norm_force);
-            //console.log(p.ext_force)
-            //console.log(p.vel)
-            const kin_friction = norm_force.norm() * this.u_kinetic;
-            if (p.vel.norm() !== 0)
-                p.ext_force.add_by(vel_unit.times(-kin_friction));
-
-            //console.log(p.ext_force)
-
-            let stat_friction = norm_force.norm() * this.u_static * p.vel.norm() ** 2 / 75.0;
-
-            if (this.accel_pressed) {
-                p.ext_force.add_by(p.forward_dir.times(15.0));
-            }
-            // else if (this.brake_pressed)
-            //     p.ext_force.subtract_by(p.forward_dir.times(2.0));
-            if (this.right_pressed)
-                p.ext_force.add_by(p.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
-            else if (this.left_pressed)
-                p.ext_force.subtract_by(p.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
-
-           // console.log(p.ext_force)
-
-        }
-        for (const s of this.springs) {
-            s.update();
-        }
-        for (const p of this.particles) {
-            p.update(this, dt);
-        }
-    }
-}
 
 export
 const game_world_base = defs.game_world_base =
@@ -297,16 +73,19 @@ const game_world_base = defs.game_world_base =
             const curve_fn = (t) => this.spline.get_position(t);
             this.curve = new Curve_Shape(curve_fn, 1000);
             this.simulation = new Simulation();
-            this.simulation.particles.push(new Particle());
+
+            // car setup
+            this.simulation.particles.push(new Car());
             this.simulation.particles[0].mass = 1.0;
             this.simulation.particles[0].pos = vec3(-50, 0, -5);
             this.simulation.particles[0].vel = vec3(0, 0.0, 0.0);
             this.simulation.particles[0].valid = true;
             this.simulation.particles[0].forward_dir = vec3(1, 0, 0);
+
             this.simulation.g_acc = vec3(0, -9.8, 0);
             this.simulation.ground_ks = 5000;
             this.simulation.ground_kd = 10;
-            this.simulation.integ_tech = 2;
+            //this.simulation.integ_tech = 2;
             this.simulation.timestep = 0.001;
             this.simulation.u_kinetic = 0.8;
             this.simulation.u_static = 0.6;
