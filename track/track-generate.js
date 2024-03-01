@@ -34,7 +34,7 @@ export function getTimeOnCurve(position, curveFunction) {
 export function getFrame(position, curveFunction) {
     let t = getTimeOnCurve(position, curveFunction);
     let point = curveFunction(t);
-    const tangent = _curveDerivative(curveFunction, t);
+    const tangent = _curveDerivative(curveFunction, t).normalized();
     const horizontal = tangent.cross(vec3(0,1,0)).normalized();
     const normal = tangent.cross(horizontal).normalized();
     return [tangent, normal, horizontal];
