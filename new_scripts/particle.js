@@ -1,5 +1,5 @@
 import {tiny, defs} from '../examples/common.js';
-import {detectCollisionOnTrack} from "../collision/collision-handling.js";
+import {detectTrackCollision} from "../collision/collision-handling.js";
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -112,9 +112,9 @@ export class Car extends Particle {
             //vel_zx[1] = 0;
             //if (this.forward_dir.dot(vel_zx) > 0)
                 this.forward_dir = vel_zx;
-                console.log("VEL", this.vel)
-                 console.log("FORWARD", this.forward_dir)
-            }
+                // console.log("VEL", this.vel)
+                //  console.log("FORWARD", this.forward_dir)
+
         }
         // console.log(this.vel.norm())
         // console.log(this.ext_force)
@@ -123,7 +123,7 @@ export class Car extends Particle {
     handle_inputs(sim) {
         super.handle_inputs(sim);
         const norm_force = sim.g_acc.times(this.mass).times(-1);
-        let stat_friction = norm_force.norm() * sim.u_static * this.vel.norm() ** 2 / 100.0;
+        let stat_friction = norm_force.norm() * sim.u_static * this.vel.norm() ** 2 / 50.0;
 
         if (!sim.accel_pressed && !sim.brake_pressed && !sim.left_pressed && !sim.right_pressed){
             if (this.delta_pos.norm() < 0.00001)
@@ -132,12 +132,10 @@ export class Car extends Particle {
         }
 
         if (sim.accel_pressed) {
-            this.ext_force.add_by(this.forward_dir.times(12.0));
+            this.ext_force.add_by(this.forward_dir.times(15.0));
         }
-        if (sim.brake_pressed)
-            this.ext_force.subtract_by(this.forward_dir.times(6));
         // else if (sim.brake_pressed)
-        //     this.ext_force.subtract_by(this.forward_dir.times(5));
+        //     this.ext_force.subtract_by(this.forward_dir.times(6));
         if (sim.right_pressed)
             this.ext_force.add_by(this.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
         if (sim.left_pressed)

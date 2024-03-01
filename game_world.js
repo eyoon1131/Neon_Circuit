@@ -67,7 +67,8 @@ export
             this.simulation.particles.push(new Car());
             let car = this.simulation.particles[0];
             car.mass = 1.0;
-            car.pos = vec3(0, 0, 50);
+            // car.pos = vec3(0, 0, 50);
+                car.pos = vec3(-5, 0, 5)
             car.vel = vec3(0, 0.0, 0.0);
             car.valid = true;
             car.forward_dir = vec3(-1, 0, 0);
@@ -104,7 +105,7 @@ export
                 ];
                 const hermiteFunction =
                     HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
-                this.shapes.track = new Track(2, 0.8, 0.4, 0.1, hermiteFunction, 64);
+                this.shapes.track = new Track(4, 0.8, 0.4, 0.1, hermiteFunction, 64);
 
                 this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, 2*sim.track_width, 2*car.scale_factors[0]));
 
@@ -204,7 +205,7 @@ export class game_world extends game_world_base {                               
             at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
 
         // !!! Draw ground
-        let floor_transform = Mat4.translation(0, -0.2, 0).times(Mat4.scale(100, 0.01, 100));
+        let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
         this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
 
         // !!! Draw ball (for reference)
