@@ -66,10 +66,13 @@ const game_world_base = defs.game_world_base =
             this.ball_radius = 0.25;
 
             // TODO: you should create the necessary shapes
+            // track setup
             this.spline = new Spline();
-            this.spline.add_point(-5, 2, 0,10, 0, 0);
-            this.spline.add_point(0, 2, 0, 10, 0, 0);
-            this.spline.add_point(5, 2, 0, 10, 0, 0);
+            this.spline.add_point(0, 0, 50,-200, 0, 0);
+            this.spline.add_point(-50, 0, 0, 0, 0, -200);
+            this.spline.add_point(0, 0, -50, 200, 0, 0);
+            this.spline.add_point(50, 0, 0, 0, 0, 200);
+            this.spline.add_point(0, 0, 50, -200, 0, 0);
             const curve_fn = (t) => this.spline.get_position(t);
             this.curve = new Curve_Shape(curve_fn, 1000);
             this.simulation = new Simulation();
@@ -78,10 +81,10 @@ const game_world_base = defs.game_world_base =
             this.simulation.particles.push(new Car());
             let car = this.simulation.particles[0];
             car.mass = 1.0;
-            car.pos = vec3(-50, 0, -5);
+            car.pos = vec3(0, 0, 50);
             car.vel = vec3(0, 0.0, 0.0);
             car.valid = true;
-            car.forward_dir = vec3(1, 0, 0);
+            car.forward_dir = vec3(-1, 0, 0);
             car.scale_factors = vec3(0.2, 0.2, 0.2);
 
             this.simulation.g_acc = vec3(0, -9.8, 0);
@@ -91,6 +94,8 @@ const game_world_base = defs.game_world_base =
             this.simulation.timestep = 0.001;
             this.simulation.u_kinetic = 0.8;
             this.simulation.u_static = 0.6;
+            this.simulation.track_fn = curve_fn;
+            this.simulation.track_width = 10;
         }
 
         render_animation( caller )

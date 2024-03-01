@@ -21,6 +21,8 @@ export class Simulation {
         this.right_pressed = false;
         this.u_static = 0;
         this.u_kinetic = 0;
+        this.track_fn = null;
+        this.track_width = 0;
     }
 
     update(dt) {

@@ -1,4 +1,5 @@
 import {tiny, defs} from '../examples/common.js';
+import {detectCollisionOnTrack} from "../collision/collision-handling.js";
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -112,17 +113,20 @@ export class Car extends Particle {
     handle_inputs(sim) {
         super.handle_inputs(sim);
         const norm_force = this.ext_force.times(-1);
-        let stat_friction = norm_force.norm() * sim.u_static * this.vel.norm() ** 2 / 75.0;
+        let stat_friction = norm_force.norm() * sim.u_static * this.vel.norm() ** 2 / 100.0;
 
         if (sim.accel_pressed) {
-            this.ext_force.add_by(this.forward_dir.times(15.0));
+            this.ext_force.add_by(this.forward_dir.times(12.0));
         }
         // else if (this.brake_pressed)
         //     p.ext_force.subtract_by(p.forward_dir.times(2.0));
         if (sim.right_pressed)
             this.ext_force.add_by(this.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
-        else if (sim.left_pressed)
+        if (sim.left_pressed)
             this.ext_force.subtract_by(this.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
+
+        // collision detection with wall (doesn't work)
+        // detectCollisionOnTrack(this, sim.track_fn, sim.track_width, this.scale_factors[0] * 2);
 
         // console.log(p.ext_force)
     }

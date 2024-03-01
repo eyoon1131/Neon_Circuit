@@ -1,4 +1,4 @@
-import { math } from '..//tiny-graphics-math.js';
+import { math } from '../tiny-graphics-math.js';
 
 export const tiny = { ...math, math };
 
