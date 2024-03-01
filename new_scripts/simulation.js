@@ -23,12 +23,16 @@ export class Simulation {
         this.u_kinetic = 0;
         this.track_fn = null;
         this.track_width = 0;
+        this.collision_funcs = [];
     }
 
     update(dt) {
         for (const p of this.particles) {
             p.handle_inputs(this);
 
+        }
+        for (const collision_func of this.collision_funcs) {
+            collision_func(this);
         }
         for (const s of this.springs) {
             s.update();
