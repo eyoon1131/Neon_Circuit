@@ -7,7 +7,7 @@ const KD = 100;
 
 
 // assumption: track is closed loop with fixed width
-export function detectCollisionOnTrack(particle, track_function, track_width, car_width){
+export function detectTrackCollision(particle, track_function, track_width, car_width){
     const position = particle.pos;
     let frame = getFrame(position, track_function );
     let track_tangent = frame[0];
