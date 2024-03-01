@@ -12,6 +12,7 @@ export class Particle {
         this.ext_force = vec3(0, 0, 0);
         //this.forward_dir = vec3(0, 0, 0);
         this.valid = false;
+        this.scale_factors = vec3(0, 0, 0);
     }
 
     update(sim, dt) {
@@ -86,6 +87,10 @@ export class Particle {
 
         //console.log(p.ext_force)
     }
+
+    get_rotation() { // gives rotation of particle relative to x-axis in zx plane
+        return 0;
+    }
 }
 
 export class Car extends Particle {
@@ -120,5 +125,13 @@ export class Car extends Particle {
             this.ext_force.subtract_by(this.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
 
         // console.log(p.ext_force)
+    }
+
+    get_rotation() {
+        let theta = Math.acos(this.forward_dir.dot(vec3(1, 0, 0)));
+        // if z < 0, then forward_dir is more than 180 degrees ccw of x-axis
+        if (this.forward_dir[2] < 0)
+            theta = (2 * Math.PI - theta);
+        return theta;
     }
 }
