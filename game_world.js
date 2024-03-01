@@ -1,4 +1,4 @@
-import { tiny, defs } from './examples/common.js';
+import {tiny, defs} from './examples/common.js';
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -7,7 +7,7 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 
 class Curve_Shape extends Shape {
     // curve_function: (t) => vec3
-    constructor(curve_function, sample_count, curve_color = color(1, 0, 0, 1)) {
+    constructor(curve_function, sample_count, curve_color=color( 1, 0, 0, 1 )) {
         super("position", "normal");
 
         this.material = { shader: new defs.Phong_Shader(), ambient: 1.0, color: curve_color }
@@ -64,7 +64,7 @@ class Spline {
     }
 
     get_position(t) {
-        if (this.size < 2) { return vec3(0, 0, 0); }
+        if (this.size < 2) {return vec3(0, 0, 0);}
 
         const A = Math.floor(t * (this.size - 1)); // A = T(i)
         const B = Math.ceil(t * (this.size - 1)); // B = T(i + 1)
@@ -107,7 +107,7 @@ class Particle {
             this.pos = this.pos.plus(this.vel.times(dt));
         }
         else if (sim.integ_tech === 3) {
-            this.pos = this.pos.plus(this.vel.times(dt)).plus(this.acc.times(dt ** 2 / 2));
+            this.pos = this.pos.plus(this.vel.times(dt)).plus(this.acc.times(dt**2 / 2));
             const new_acc = this.ext_force.times(1.0 / this.mass);
             this.vel = this.vel.plus(this.acc.plus(new_acc).times(dt / 2));
             this.acc = new_acc;
@@ -192,8 +192,6 @@ class Simulation {
     }
 }
 
-import { HermiteFactory, Track } from './track/track-generate.js';
-
 export
     const game_world_base = defs.game_world_base =
         class game_world_base extends Component {                                          // **My_Demo_Base** is a Scene that can be added to any display canvas.
@@ -233,23 +231,36 @@ export
                 this.ball_radius = 0.25;
 
                 // TODO: you should create the necessary shapes
+                // track setup
                 this.spline = new Spline();
-                this.spline.add_point(-5, 2, 0, 10, 0, 0);
-                this.spline.add_point(0, 2, 0, 10, 0, 0);
-                this.spline.add_point(5, 2, 0, 10, 0, 0);
+                this.spline.add_point(0, 0,  50,-200, 0, 0);
+                this.spline.add_point(-50, 0, 0, 0, 0, -200);
+                this.spline.add_point(0, 0, -50, 200, 0, 0);
+                this.spline.add_point(50, 0, 0, 0, 0, 200);
+                this.spline.add_point(0, 0, 50, -200, 0, 0);
                 const curve_fn = (t) => this.spline.get_position(t);
                 this.curve = new Curve_Shape(curve_fn, 1000);
                 this.simulation = new Simulation();
-                this.simulation.particles.push(new Particle());
-                this.simulation.particles[0].mass = 1.0;
-                this.simulation.particles[0].pos = vec3(0, 0, 0.0);
-                this.simulation.particles[0].vel = vec3(0, 0.0, 0.0);
-                this.simulation.particles[0].valid = true;
+    
+                // car setup
+                this.simulation.particles.push(new Car());
+                let car = this.simulation.particles[0];
+                car.mass = 1.0;
+                car.pos = vec3(0, 0, 50);
+                car.vel = vec3(0, 0.0, 0.0);
+                car.valid = true;
+                car.forward_dir = vec3(-1, 0, 0);
+                car.scale_factors = vec3(0.2, 0.2, 0.2);
+
                 this.simulation.g_acc = vec3(0, -9.8, 0);
-                this.simulation.ground_ks = 15000;
-                this.simulation.ground_kd = 2000;
-                this.simulation.integ_tech = 2;
+                this.simulation.ground_ks = 5000;
+                this.simulation.ground_kd = 10;
+                //this.simulation.integ_tech = 2;
                 this.simulation.timestep = 0.001;
+                this.simulation.u_kinetic = 0.8;
+                this.simulation.u_static = 0.6;
+                this.simulation.track_fn = curve_fn;
+                this.simulation.track_width = 10;
 
                 // prepare the track
                 const hermiteCurvePoints = [
@@ -288,10 +299,14 @@ export
                     // perspective() are field of view, aspect ratio, and distances to the near plane and far plane.
 
                     // !!! Camera changed here
+                    const car = this.simulation.particles[0];
+                    const at = car.pos;
+                    //const eye = at.minus(car.forward_dir)
+                    const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
                     Shader.assign_camera(Mat4.look_at(
-                        this.simulation.particles[0].pos.minus(vec3(0, -5, 10)), this.simulation.particles[0].pos, vec3(0, 1, 0)), this.uniforms);
-                }
-                this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
+                            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+                    }
+                    this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
 
                 // *** Lights: *** Values of vector or point lights.  They'll be consulted by
                 // the shader when coloring shapes.  See Light's class definition for inputs.
@@ -349,14 +364,19 @@ export class game_world extends game_world_base {                               
         let t_step = t;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
-        let part_vel_xz = this.simulation.particles[0].vel;
+        //let part_vel_xz = this.simulation.particles[0].vel;
         //part_vel_xz[1] =
+        const car = this.simulation.particles[0];
+        const at = car.pos;
+        //const eye = at.minus(car.forward_dir)
+        const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+        //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
         Shader.assign_camera(Mat4.look_at(
-            this.simulation.particles[0].pos.plus(vec3(0, 5, -10)), this.simulation.particles[0].pos, vec3(0, 1, 0)), this.uniforms);
+            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
 
         // !!! Draw ground
         let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(10, 0.01, 10));
-        this.shapes.box.draw(caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow });
+        this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
 
         // !!! Draw ball (for reference)
         let ball_transform = Mat4.translation(this.ball_location[0], this.ball_location[1], this.ball_location[2])
@@ -374,9 +394,13 @@ export class game_world extends game_world_base {                               
             t_step += this.simulation.timestep;
         }
         // from discussion slides
+        //console.log("render");
         for (const p of this.simulation.particles) {
             const pos = p.pos;
-            let model_transform = Mat4.scale(0.2, 0.2, 0.2);
+            const scale = p.scale_factors;
+            let model_transform = Mat4.scale(scale[0], scale[1], scale[2]);
+            let theta = p.get_rotation();
+            model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
             this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
         }
