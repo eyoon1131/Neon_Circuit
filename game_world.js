@@ -76,11 +76,13 @@ const game_world_base = defs.game_world_base =
 
             // car setup
             this.simulation.particles.push(new Car());
-            this.simulation.particles[0].mass = 1.0;
-            this.simulation.particles[0].pos = vec3(-50, 0, -5);
-            this.simulation.particles[0].vel = vec3(0, 0.0, 0.0);
-            this.simulation.particles[0].valid = true;
-            this.simulation.particles[0].forward_dir = vec3(1, 0, 0);
+            let car = this.simulation.particles[0];
+            car.mass = 1.0;
+            car.pos = vec3(-50, 0, -5);
+            car.vel = vec3(0, 0.0, 0.0);
+            car.valid = true;
+            car.forward_dir = vec3(1, 0, 0);
+            car.scale_factors = vec3(0.2, 0.2, 0.2);
 
             this.simulation.g_acc = vec3(0, -9.8, 0);
             this.simulation.ground_ks = 5000;
@@ -204,20 +206,15 @@ export class game_world extends game_world_base
         }
         // from discussion slides
         //console.log("render");
-        //for (const p of this.simulation.particles) {
-        const pos = car.pos;
-        let model_transform = Mat4.scale(0.2, 0.2, 0.2);
-        let theta = Math.acos(car.forward_dir.dot(vec3(1, 0, 0)));
-        // if z < 0, then forward_dir is more than 180 degrees ccw of x-axis
-        if (car.forward_dir[2] < 0)
-            theta = (2 * Math.PI - theta);
-        // p.forward_dir[2] = Math.cos(-theta) * p.forward_dir[2] - Math.sin(-theta) * p.forward_dir[0];
-        // p.forward_dir[0] = Math.sin(-theta) * p.forward_dir[2] + Math.cos(-theta) * p.forward_dir[0];
-        // p.forward_dir.normalize();
-        model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
-        model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
-        this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
-        //}
+        for (const p of this.simulation.particles) {
+            const pos = p.pos;
+            const scale = p.scale_factors;
+            let model_transform = Mat4.scale(scale[0], scale[1], scale[2]);
+            let theta = p.get_rotation();
+            model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
+            model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
+            this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
+        }
         for (const s of this.simulation.springs) {
             const p1 = s.particle1.pos;
             const p2 = s.particle2.pos;
