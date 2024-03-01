@@ -86,6 +86,7 @@ const game_world_base = defs.game_world_base =
             car.valid = true;
             car.forward_dir = vec3(-1, 0, 0);
             car.scale_factors = vec3(0.2, 0.2, 0.2);
+            car.delta_pos = vec3(0, 0, 0);
 
             this.simulation.g_acc = vec3(0, -9.8, 0);
             this.simulation.ground_ks = 5000;
@@ -189,6 +190,9 @@ export class game_world extends game_world_base
         const car = this.simulation.particles[0];
         const at = car.pos;
         //const eye = at.minus(car.forward_dir)
+        // let camera_dist = 10;
+        // if (this.simulation.brake_pressed)
+        //     camera_dist = -camera_dist;
         const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
         //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
         Shader.assign_camera( Mat4.look_at (
