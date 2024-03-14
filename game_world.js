@@ -73,7 +73,7 @@ export
                 this.simulation.particles.push(new Car());
                 let car = this.simulation.particles[0];
                 car.mass = 1.0;
-                car.pos = vec3(-15, CAR_SCALE, 15)
+                car.pos = vec3(-15, CAR_SCALE, -15)
                 car.vel = vec3(0.0, 0.0, 0.0);
                 car.valid = true;
                 car.forward_dir = vec3(-1, 0, 0);
@@ -107,11 +107,11 @@ export
                 );
 
                 const enemyPathPoints = [
-                    hermiteCurvePoints[0].plus(vec3(0.2 * TRACK_WIDTH / 2, 0.1, 0.2 *TRACK_WIDTH / 2)),
-                    hermiteCurvePoints[1].plus(vec3(Math.random() * TRACK_WIDTH / 2 - 1.5, 0.1, Math.random() * TRACK_WIDTH / 2 - 1.5)),
-                    hermiteCurvePoints[2].plus(vec3(Math.random() * TRACK_WIDTH / 2 - 1.5, 0.1, Math.random() * TRACK_WIDTH / 2 - 1.5)),
-                    hermiteCurvePoints[3].plus(vec3(Math.random() * TRACK_WIDTH / 2 - 1.5, 0.1, Math.random() * TRACK_WIDTH / 2 - 1.5)),
-                    hermiteCurvePoints[4].plus(vec3(0.2 * TRACK_WIDTH / 2, 0.1, 0.2 * TRACK_WIDTH / 2))
+                    hermiteCurvePoints[0].plus(vec3(0.2 * TRACK_WIDTH, 0, 0.2 * TRACK_WIDTH)),
+                    hermiteCurvePoints[1].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - 3), 0, (Math.random() - 0.5) * (TRACK_WIDTH - 3))),
+                    hermiteCurvePoints[2].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - 3), 0, (Math.random() - 0.5) * (TRACK_WIDTH - 3))),
+                    hermiteCurvePoints[3].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - 3), 0, (Math.random() - 0.5) * (TRACK_WIDTH - 3))),
+                    hermiteCurvePoints[4].plus(vec3(0.2 * TRACK_WIDTH, 0, 0.2 * TRACK_WIDTH))
                 ] , enemyPathTangents = [
                     hermiteCurveTangents[0],
                     hermiteCurveTangents[1],
