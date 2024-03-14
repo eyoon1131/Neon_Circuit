@@ -190,16 +190,14 @@ export class game_world extends game_world_base {                               
         let t_step = t;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
-        //let part_vel_xz = this.simulation.particles[0].vel;
-        //part_vel_xz[1] =
+
         const car = this.simulation.particles[0];
         const at = car.pos;
-        //const eye = at.minus(car.forward_dir)
         const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
-        //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
-        Shader.assign_camera(Mat4.look_at(
-            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
-
+        if (!this.free_camera) {
+            Shader.assign_camera(Mat4.look_at(
+                at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+        }
         // !!! Draw ground
         let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
         this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
@@ -269,8 +267,7 @@ export class game_world extends game_world_base {                               
 
     render_controls() {                                 // render_controls(): Sets up a panel of interactive HTML elements, including
         // buttons with key bindings for affecting this scene, and live info readouts.
-        this.control_panel.innerHTML += "Part Three: (no buttons)";
-        this.new_line();
+        this.control_panel.innerHTML += "Controls: <br>";
 
         this.key_triggered_button("Accelerate", ["i"],
             () => this.simulation.accel_pressed = true, "#6E6460",
@@ -282,10 +279,30 @@ export class game_world extends game_world_base {                               
         this.key_triggered_button("Left", ["j"],
             () => this.simulation.left_pressed = true, "#6E6460",
             () => this.simulation.left_pressed = false);
-        this.new_line();
         this.key_triggered_button("Right", ["l"],
             () => this.simulation.right_pressed = true, "#6E6460",
             () => this.simulation.right_pressed = false);
+        this.new_line();
+        
+        this.control_panel.innerHTML += "Alternative Controls: <br>";
+        this.key_triggered_button("Accelerate", ["ArrowUp"],
+            () => this.simulation.accel_pressed = true, undefined,
+            () => this.simulation.accel_pressed = false);
+        this.key_triggered_button("Brake", ["ArrowDown"],
+            () => this.simulation.brake_pressed = true, undefined,
+            () => this.simulation.brake_pressed = false);
+        this.new_line();
+        this.key_triggered_button("Left", ["ArrowLeft"],
+            () => this.simulation.left_pressed = true, undefined,
+            () => this.simulation.left_pressed = false);
+        this.key_triggered_button("Right", ["ArrowRight"],
+            () => this.simulation.right_pressed = true, undefined,
+            () => this.simulation.right_pressed = false);
+        this.new_line();
+        
+        this.control_panel.innerHTML += "Camera Controls: <br>";
+        this.key_triggered_button("Attach/Detach Camera", ["Shift", "F"],
+            () => this.free_camera =! this.free_camera);
 
     }
 
