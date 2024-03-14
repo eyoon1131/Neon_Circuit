@@ -294,7 +294,8 @@ export class game_world extends game_world_base {                               
         this.shapes.box.draw(caller, this.uniforms, wall_transform, { ...this.materials.metal, color: color(0, 1, 0, 1) });
         this.shapes.box.draw(caller, this.uniforms, car_collision_transform, { ...this.materials.metal, color: color(1, 0, 0, 1) });
 
-        this.shapes.curve.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+        this.shapes.curve.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) })
+
     }
 
     render_controls() {                                 // render_controls(): Sets up a panel of interactive HTML elements, including
