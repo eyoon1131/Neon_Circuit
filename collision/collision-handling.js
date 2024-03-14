@@ -3,7 +3,7 @@ import { getFrame, getTimeOnCurve } from '../track/track-generate.js';
 export const tiny = { ...math, math };
 
 const KS = 1000;
-const KD = 10;
+const KD = 50;
 
 
 // assumption: track is closed loop with fixed width
@@ -32,8 +32,8 @@ function detectTrackCollision(particle, track_function, track_width, car_width){
     // check if car is outside track
     // let collision = false;
     if (distance  <=  car_width/ 2){
-        console.log("track center", track_center)
-        console.log("collision");
+        // console.log("track center", track_center)
+        console.log("collision happening!");
         console.log(distance, track_width / 2, car_width / 2)
         particle.collided = true;
         handleTrackCollision(particle, track_center, track_horizontal, track_width, car_width, distance)
@@ -124,15 +124,15 @@ function calculate_spring_force(xi, xj, ks, length) {
     let d_hat = d_vec.normalized();
     let fs_ij = d_hat.times(ks * (d - length));
     return fs_ij;
-  }
+}
 
 function calculate_damping_force(xi, xj, vi, vj, kd) { 
-let v_vec = vj.minus(vi);
-let d_vec = xj.minus(xi);
-let d = d_vec.norm();
-let d_hat = d_vec.normalized();
-let fd_ij = d_hat.times(kd * v_vec.dot(d_hat));
-return fd_ij;
+    let v_vec = vj.minus(vi);
+    let d_vec = xj.minus(xi);
+    let d = d_vec.norm();
+    let d_hat = d_vec.normalized();
+    let fd_ij = d_hat.times(kd * v_vec.dot(d_hat));
+    return fd_ij;
 }
 
 export { detectTrackCollision, trackCollisionDebug  }

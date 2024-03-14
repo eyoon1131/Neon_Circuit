@@ -90,7 +90,7 @@ export class Particle {
         if (this.delta_pos.norm() > 0.00001)
             this.ext_force.add_by(vel_unit.times(-kin_friction));
 
-        console.log(this.delta_pos);
+        //console.log(this.delta_pos);
     }
 
     get_rotation() { // gives rotation of particle relative to x-axis in zx plane
@@ -103,20 +103,28 @@ export class Car extends Particle {
         super();
         this.forward_dir = vec3(0, 0, 0); // need to initialize
         this.collided = false;
+        const turning_scale = 2.0/1000;
+        this.left_turn_matrix = Mat4.rotation(turning_scale, 0, 1, 0);
+        this.right_turn_matrix = Mat4.rotation(-turning_scale, 0, 1, 0);
     }
     update(sim, dt) {
         super.update(sim, dt);
+        if (sim.left_pressed)
+            this.forward_dir = this.left_turn_matrix.times(this.forward_dir.to4(1)).to3();
+        if (sim.right_pressed)
+            this.forward_dir = this.right_turn_matrix.times(this.forward_dir.to4(1)).to3();
 
-        if (this.vel[0] !== 0 || this.vel[2] !== 0) {
-            const vel_zx = this.vel.normalized();
-            //vel_zx[1] = 0;
-            //if (this.forward_dir.dot(vel_zx) > 0)
-                this.forward_dir = vel_zx;
-                // console.log("VEL", this.vel)
-                // console.log("FORWARD", this.forward_dir)
-        }
-        // console.log(this.vel.norm())
-        // console.log(this.ext_force)
+
+        // if (this.vel[0] !== 0 || this.vel[2] !== 0) {
+        //     const vel_zx = this.vel.normalized();
+        //     //vel_zx[1] = 0;
+        //     //if (this.forward_dir.dot(vel_zx) > 0)
+        //     this.forward_dir = vel_zx;
+        //     // console.log("VEL", this.vel)
+        //     // console.log("FORWARD", this.forward_dir)
+        // }
+        // // console.log(this.vel.norm())
+        // // console.log(this.ext_force)
     }
 
     handle_inputs(sim) {
@@ -130,9 +138,8 @@ export class Car extends Particle {
             return;
         }
 
-        if (sim.accel_pressed) {
+        if (sim.accel_pressed) 
             this.ext_force.add_by(this.forward_dir.times(15.0));
-        }
         if (sim.brake_pressed)
             this.ext_force.subtract_by(this.forward_dir.times(12));
         if (sim.right_pressed)

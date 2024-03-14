@@ -11,7 +11,13 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 
 // TODO: you should implement the required classes here or in another file.
 
+const CAR_SCALE = 0.2;
 
+const TRACK_WIDTH = 5;
+const TRACK_HEIGHT = 0.1;
+const TRACK_WALL_WIDTH = 0.8;
+const TRACK_WALL_HEIGHT = 0.4;
+const TRACK_DIVISIONS = 64;
 
 export
     const game_world_base = defs.game_world_base =
@@ -48,54 +54,40 @@ export
                 this.materials.metal = { shader: phong, ambient: .2, diffusivity: 1, specularity: 1, color: color(.9, .5, .9, 1) }
                 this.materials.rgb = { shader: tex_phong, ambient: .5, texture: new Texture("assets/rgb.jpg") }
 
-                this.ball_location = vec3(1, 1, 1);
-                this.ball_radius = 0.25;
-
-            // TODO: you should create the necessary shapes
-            // track setup
-            // this.spline = new Spline();
-            // this.spline.add_point(0, 0, 50,-200, 0, 0);
-            // this.spline.add_point(-50, 0, 0, 0, 0, -200);
-            // this.spline.add_point(0, 0, -50, 200, 0, 0);
-            // this.spline.add_point(50, 0, 0, 0, 0, 200);
-            // this.spline.add_point(0, 0, 50, -200, 0, 0);
-            // const curve_fn = this.curve_fn = (t) => this.spline.get_position(t);
-            // this.curve = new Curve_Shape(curve_fn, 1000);
-            this.simulation = new Simulation();
-
-            // car setup
-            this.simulation.particles.push(new Car());
-            let car = this.simulation.particles[0];
-            car.mass = 1.0;
-            // car.pos = vec3(0, 0, 50);
-            car.pos = vec3(-5, 0, 5)
-            car.vel = vec3(0, 0.0, 0.0);
-            car.valid = true;
-            car.forward_dir = vec3(-1, 0, 0);
-            car.scale_factors = vec3(0.2, 0.2, 0.2);
-            car.delta_pos = vec3(0, 0, 0);
-
+                // simulation setup
+                this.simulation = new Simulation();
                 this.simulation.g_acc = vec3(0, -9.8, 0);
                 this.simulation.ground_ks = 5000;
                 this.simulation.ground_kd = 10;
-                //this.simulation.integ_tech = 2;
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
+                // collision handling
+                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, 5-0.8, 2*car.scale_factors[0]));
+                // this.simulation.track_width = 10;
+                // this.simulation.integ_tech = 2;
                 // this.simulation.track_fn = curve_fn;
-                this.simulation.track_width = 10;
+
+
+                // car setup
+                this.simulation.particles.push(new Car());
+                let car = this.simulation.particles[0];
+                car.mass = 1.0;
+                car.pos = vec3(-5, CAR_SCALE, 5)
+                car.vel = vec3(0.0, 0.0, 0.0);
+                car.valid = true;
+                car.forward_dir = vec3(-1, 0, 0);
+                car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
+                car.delta_pos = vec3(0, 0, 0);
 
                 // prepare the track
                 const hermiteCurvePoints = [
-                    vec3(-5, -0.1, -5),
-                    // vec3(-5, 0.5, 5),
-                    // vec3(5, 0.5, 5),
-                    // vec3(5, 0.5, -5),
-                    vec3(-5, -0.1, 5),
-                    vec3(5, -0.1, 5),
-                    vec3(5, -0.1, -5),
+                    vec3(-5, -TRACK_HEIGHT, -5),
+                    vec3(-5, -TRACK_HEIGHT, 5),
+                    vec3(5, -TRACK_HEIGHT, 5),
+                    vec3(5, -TRACK_HEIGHT, -5),
 
-                    vec3(-5, -0.1, -5)
+                    vec3(-5, -CAR_SCALE, -5)
                 ], hermiteCurveTangents = [
                     vec3(-20, 0, 20),
                     vec3(20, 0, 20),
@@ -104,11 +96,15 @@ export
                     vec3(-20, 0, 20)
                 ];
                 const hermiteFunction=this.curve_fn =
-                    HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
-                this.shapes.track = new Track(5, 0.8, 0.4, 0.1, hermiteFunction, 64);
-
-                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, 5-0.8, 2*car.scale_factors[0]));
-
+                    HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);                
+                this.shapes.track = new Track(
+                    TRACK_WIDTH, 
+                    TRACK_WALL_WIDTH,
+                    TRACK_WALL_HEIGHT,
+                    TRACK_HEIGHT,
+                    hermiteFunction,
+                    TRACK_DIVISIONS
+                );
             }
 
             render_animation(caller) {                                                // display():  Called once per frame of animation.  We'll isolate out
@@ -129,12 +125,12 @@ export
                     // perspective() are field of view, aspect ratio, and distances to the near plane and far plane.
 
                     // // !!! Camera changed here
-                    // const car = this.simulation.particles[0];
-                    // const at = car.pos;
-                    // //const eye = at.minus(car.forward_dir)
-                    // const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
-                    // Shader.assign_camera(Mat4.look_at(
-                    //         at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+                    const car = this.simulation.particles[0];
+                    const at = car.pos;
+                    //const eye = at.minus(car.forward_dir)
+                    const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+                    Shader.assign_camera(Mat4.look_at(
+                            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
                     }
                     this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
 
@@ -194,15 +190,15 @@ export class game_world extends game_world_base {                               
         let t_step = t;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
-        // //let part_vel_xz = this.simulation.particles[0].vel;
-        // //part_vel_xz[1] =
-        // const car = this.simulation.particles[0];
-        // const at = car.pos;
-        // //const eye = at.minus(car.forward_dir)
-        // const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
-        // //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
-        // Shader.assign_camera(Mat4.look_at(
-        //     at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+        //let part_vel_xz = this.simulation.particles[0].vel;
+        //part_vel_xz[1] =
+        const car = this.simulation.particles[0];
+        const at = car.pos;
+        //const eye = at.minus(car.forward_dir)
+        const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+        //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
+        Shader.assign_camera(Mat4.look_at(
+            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
 
         // !!! Draw ground
         let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
@@ -229,26 +225,7 @@ export class game_world extends game_world_base {                               
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
             this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
         }
-        for (const s of this.simulation.springs) {
-            const p1 = s.particle1.pos;
-            const p2 = s.particle2.pos;
-            const len = p2.minus(p1).norm();
-            const center = p1.plus(p2).times(0.5);
-            let model_transform = Mat4.scale(0.05, len / 2, 0.05);
 
-            const p = p1.minus(p2).normalized();
-            let v = vec3(0, 1, 0);
-            if (Math.abs(v.cross(p).norm()) < 0.1) {
-                v = vec3(0, 0, 1);
-                model_transform = Mat4.scale(0.05, 0.05, len / 2);
-            }
-            const w = v.cross(p).normalized();
-
-            const theta = Math.acos(v.dot(p));
-            model_transform.pre_multiply(Mat4.rotation(theta, w[0], w[1], w[2]));
-            model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
-            this.shapes.box.draw(caller, this.uniforms, model_transform, { ...this.materials.metal, color: red });
-        }
         // render the track with some debug info
         this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
         for (let p of this.shapes.track.arrays.position) {
@@ -269,7 +246,6 @@ export class game_world extends game_world_base {                               
         }
 
         // Collision debug section 
-        const car = this.simulation.particles[0];
         let collision_debug_info = detectTrackCollision(car, this.curve_fn, 5-0.8, 2*car.scale_factors[0]);
         const track_center_pos = collision_debug_info.track_center;
         const track_horizontal = collision_debug_info.track_horizontal;
