@@ -51,28 +51,29 @@ export
                 this.ball_location = vec3(1, 1, 1);
                 this.ball_radius = 0.25;
 
-                // TODO: you should create the necessary shapes
-                // track setup
-                // this.spline = new Spline();
-                // this.spline.add_point(0, 0,  50,-200, 0, 0);
-                // this.spline.add_point(-50, 0, 0, 0, 0, -200);
-                // this.spline.add_point(0, 0, -50, 200, 0, 0);
-                // this.spline.add_point(50, 0, 0, 0, 0, 200);
-                // this.spline.add_point(0, 0, 50, -200, 0, 0);
-                // const curve_fn = this.curve_fn = (t) => this.spline.get_position(t);
-                // this.curve = new Curve_Shape(curve_fn, 1000);
-                this.simulation = new Simulation();
-    
-                // car setup
-                this.simulation.particles.push(new Car());
-                let car = this.simulation.particles[0];
-                car.mass = 1.0;
-                // should parameterize this
-                car.pos = vec3(-5, 0, 5);
-                car.vel = vec3(0, 0.0, 0.0);
-                car.valid = true;
-                car.forward_dir = vec3(-1, 0, 0);
-                car.scale_factors = vec3(0.2, 0.2, 0.2);
+            // TODO: you should create the necessary shapes
+            // track setup
+            // this.spline = new Spline();
+            // this.spline.add_point(0, 0, 50,-200, 0, 0);
+            // this.spline.add_point(-50, 0, 0, 0, 0, -200);
+            // this.spline.add_point(0, 0, -50, 200, 0, 0);
+            // this.spline.add_point(50, 0, 0, 0, 0, 200);
+            // this.spline.add_point(0, 0, 50, -200, 0, 0);
+            // const curve_fn = this.curve_fn = (t) => this.spline.get_position(t);
+            // this.curve = new Curve_Shape(curve_fn, 1000);
+            this.simulation = new Simulation();
+
+            // car setup
+            this.simulation.particles.push(new Car());
+            let car = this.simulation.particles[0];
+            car.mass = 1.0;
+            // car.pos = vec3(0, 0, 50);
+            car.pos = vec3(-5, 0, 5)
+            car.vel = vec3(0, 0.0, 0.0);
+            car.valid = true;
+            car.forward_dir = vec3(-1, 0, 0);
+            car.scale_factors = vec3(0.2, 0.2, 0.2);
+            car.delta_pos = vec3(0, 0, 0);
 
                 this.simulation.g_acc = vec3(0, -9.8, 0);
                 this.simulation.ground_ks = 5000;
@@ -204,7 +205,7 @@ export class game_world extends game_world_base {                               
         //     at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
 
         // !!! Draw ground
-        let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(10, 0.01, 10));
+        let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
         this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
 
         const t_next = t_step + dt;

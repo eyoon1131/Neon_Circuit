@@ -1,4 +1,5 @@
 import {tiny, defs} from '../examples/common.js';
+import {detectTrackCollision} from "../collision/collision-handling.js";
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -13,6 +14,7 @@ export class Particle {
         //this.forward_dir = vec3(0, 0, 0);
         this.valid = false;
         this.scale_factors = vec3(0, 0, 0);
+        this.delta_pos = vec3(0, 0, 0);
     }
 
     update(sim, dt) {
@@ -27,6 +29,8 @@ export class Particle {
         //         this.vel = this.vel.normalized().times(30);
         // }
         // else if (sim.integ_tech === 2) {
+        const old_pos = this.pos;
+
         this.acc = this.ext_force.times(1.0 / this.mass);
         this.vel = this.vel.plus(this.acc.times(dt));
         if (this.vel.norm() > 30)
@@ -43,6 +47,7 @@ export class Particle {
         // }
         if (this.pos[1] < 0)
             this.pos[1] = 0;
+        this.delta_pos = this.pos.minus(old_pos);
         //console.log(this.pos)
         // if (this.vel[0] !== 0 || this.vel[2] !== 0) {
         //     const vel_zx = this.vel.normalized();
@@ -82,10 +87,10 @@ export class Particle {
         //console.log(p.ext_force)
         //console.log(p.vel)
         const kin_friction = norm_force.norm() * sim.u_kinetic;
-        if (this.vel.norm() !== 0)
+        if (this.delta_pos.norm() > 0.00001)
             this.ext_force.add_by(vel_unit.times(-kin_friction));
 
-        //console.log(p.ext_force)
+        console.log(this.delta_pos);
     }
 
     get_rotation() { // gives rotation of particle relative to x-axis in zx plane
@@ -101,15 +106,14 @@ export class Car extends Particle {
     }
     update(sim, dt) {
         super.update(sim, dt);
-        
+
         if (this.vel[0] !== 0 || this.vel[2] !== 0) {
             const vel_zx = this.vel.normalized();
             //vel_zx[1] = 0;
-            if (this.forward_dir.dot(vel_zx) > 0 && this.collided === false){
+            //if (this.forward_dir.dot(vel_zx) > 0)
                 this.forward_dir = vel_zx;
                 // console.log("VEL", this.vel)
                 // console.log("FORWARD", this.forward_dir)
-            }
         }
         // console.log(this.vel.norm())
         // console.log(this.ext_force)
@@ -118,10 +122,16 @@ export class Car extends Particle {
     handle_inputs(sim) {
         super.handle_inputs(sim);
         const norm_force = sim.g_acc.times(this.mass).times(-1);
-        let stat_friction = norm_force.norm() * sim.u_static * this.vel.norm() ** 2 / 100.0;
+        let stat_friction = norm_force.norm() * sim.u_static * this.vel.norm() ** 2 / 50.0;
+
+        if (!sim.accel_pressed && !sim.brake_pressed && !sim.left_pressed && !sim.right_pressed){
+            if (this.delta_pos.norm() < 0.00001)
+                this.vel = vec3(0, 0, 0)
+            return;
+        }
 
         if (sim.accel_pressed) {
-            this.ext_force.add_by(this.forward_dir.times(12.0));
+            this.ext_force.add_by(this.forward_dir.times(15.0));
         }
         if (sim.brake_pressed)
             this.ext_force.subtract_by(this.forward_dir.times(12));
