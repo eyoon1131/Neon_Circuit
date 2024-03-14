@@ -19,7 +19,7 @@ export function getTimeOnCurve(position, curveFunction) {
         let currentPoint = curveFunction(step(i));
         if (!minPoint || // found a point that's closer
             position.minus(currentPoint).norm() <
-            minPoint.minus(currentPoint).norm()) {
+            position.minus(minPoint).norm()) {
 
             ans = step(i);
             minPoint = currentPoint;
