@@ -246,17 +246,15 @@ export class game_world extends game_world_base {                               
         }
 
         // Collision debug section 
-        let collision_debug_info = detectTrackCollision(car, this.curve_fn, 5-0.8, 2*car.scale_factors[0]);
+        let collision_debug_info = trackCollisionDebug(car, this.curve_fn, 5-0.8, 2*car.scale_factors[0]);
         const track_center_pos = collision_debug_info.track_center;
         const track_horizontal = collision_debug_info.track_horizontal;
-
-        let collision_handle = trackCollisionDebug(car, track_center_pos ,track_horizontal, 5-0.8, 2*car.scale_factors[0]);
+        const wall_pos = collision_debug_info.wall_pos;
+        const car_collision_point = collision_debug_info.car_collision_point;
 
         let track_center_transform = Mat4.scale(0.05, 20, 0.05);
         track_center_transform.pre_multiply(Mat4.translation(track_center_pos[0], track_center_pos[1], track_center_pos[2]));
         
-        const wall_pos = collision_handle.wall_pos;
-        const car_collision_point = collision_handle.car_collision_point;
         let wall_transform = Mat4.scale(0.05, 20, 0.05);
         wall_transform.pre_multiply(Mat4.translation(wall_pos[0], wall_pos[1], wall_pos[2]));
 
