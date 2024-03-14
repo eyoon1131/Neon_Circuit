@@ -1,8 +1,7 @@
 import {tiny, defs} from './examples/common.js';
-import {HermiteFactory, Track} from './track/track-generate.js';
-import {Car} from './new_scripts/particle.js';
+import {Curve, HermiteFactory, Track} from './track/track-generate.js';
+import {Car, Enemy, Particle} from './new_scripts/particle.js';
 import {Simulation} from './new_scripts/simulation.js';
-import {Spline} from './new_scripts/spline.js';
 import {Curve_Shape} from './new_scripts/shapes.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
@@ -13,11 +12,11 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 
 const CAR_SCALE = 0.2;
 
-const TRACK_WIDTH = 5;
+const TRACK_WIDTH = 10;
 const TRACK_HEIGHT = 0.1;
 const TRACK_WALL_WIDTH = 0.8;
 const TRACK_WALL_HEIGHT = 0.4;
-const TRACK_DIVISIONS = 64;
+const TRACK_DIVISIONS = 100;
 
 export
     const game_world_base = defs.game_world_base =
@@ -63,7 +62,8 @@ export
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
                 // collision handling
-                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, 5-0.8, 2*car.scale_factors[0]));
+                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH-TRACK_WALL_WIDTH/2, 2*car.scale_factors[0]));
+                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[1], hermiteFunction, TRACK_WIDTH-TRACK_WALL_WIDTH/2, 2*car.scale_factors[0]));
                 // this.simulation.track_width = 10;
                 // this.simulation.integ_tech = 2;
                 // this.simulation.track_fn = curve_fn;
@@ -73,38 +73,69 @@ export
                 this.simulation.particles.push(new Car());
                 let car = this.simulation.particles[0];
                 car.mass = 1.0;
-                car.pos = vec3(-5, CAR_SCALE, 5)
+                car.pos = vec3(-15, CAR_SCALE, 15)
                 car.vel = vec3(0.0, 0.0, 0.0);
                 car.valid = true;
                 car.forward_dir = vec3(-1, 0, 0);
                 car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                 car.delta_pos = vec3(0, 0, 0);
+                car.max_speed = 20;
 
                 // prepare the track
                 const hermiteCurvePoints = [
-                    vec3(-5, -TRACK_HEIGHT, -5),
-                    vec3(-5, -TRACK_HEIGHT, 5),
-                    vec3(5, -TRACK_HEIGHT, 5),
-                    vec3(5, -TRACK_HEIGHT, -5),
-
-                    vec3(-5, -CAR_SCALE, -5)
+                    vec3(-15, -TRACK_HEIGHT, -15),
+                    vec3(-15, -TRACK_HEIGHT, 15),
+                    vec3(15, -TRACK_HEIGHT, 15),
+                    vec3(15, -TRACK_HEIGHT, -15),
+                    vec3(-15, -TRACK_HEIGHT, -15)
                 ], hermiteCurveTangents = [
-                    vec3(-20, 0, 20),
-                    vec3(20, 0, 20),
-                    vec3(20, 0, -20),
-                    vec3(-20, 0, -20),
-                    vec3(-20, 0, 20)
+                    vec3(-100, 0, 100),
+                    vec3(100, 0, 100),
+                    vec3(100, 0, -100),
+                    vec3(-100, 0, -100),
+                    vec3(-100, 0, 100)
                 ];
                 const hermiteFunction=this.curve_fn =
-                    HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);                
+                    HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
                 this.shapes.track = new Track(
-                    TRACK_WIDTH, 
+                    TRACK_WIDTH,
                     TRACK_WALL_WIDTH,
                     TRACK_WALL_HEIGHT,
                     TRACK_HEIGHT,
                     hermiteFunction,
                     TRACK_DIVISIONS
                 );
+
+                const enemyPathPoints = [
+                    hermiteCurvePoints[0].plus(vec3(0.2 * TRACK_WIDTH / 2, 0.1, 0.2 *TRACK_WIDTH / 2)),
+                    hermiteCurvePoints[1].plus(vec3(Math.random() * TRACK_WIDTH / 2 - 1.5, 0.1, Math.random() * TRACK_WIDTH / 2 - 1.5)),
+                    hermiteCurvePoints[2].plus(vec3(Math.random() * TRACK_WIDTH / 2 - 1.5, 0.1, Math.random() * TRACK_WIDTH / 2 - 1.5)),
+                    hermiteCurvePoints[3].plus(vec3(Math.random() * TRACK_WIDTH / 2 - 1.5, 0.1, Math.random() * TRACK_WIDTH / 2 - 1.5)),
+                    hermiteCurvePoints[4].plus(vec3(0.2 * TRACK_WIDTH / 2, 0.1, 0.2 * TRACK_WIDTH / 2))
+                ] , enemyPathTangents = [
+                    hermiteCurveTangents[0],
+                    hermiteCurveTangents[1],
+                    hermiteCurveTangents[2],
+                    hermiteCurveTangents[3],
+                    hermiteCurveTangents[4]
+                ];
+                const enemyPathFunction = this.curve_fn2 =
+                    HermiteFactory(enemyPathPoints, enemyPathTangents);
+
+                // enemy 1
+                this.simulation.particles.push(new Enemy());
+                let car2 = this.simulation.particles[1];
+                car2.mass = 1.0;
+                // car.pos = vec3(0, 0, 50);
+                car2.pos = enemyPathPoints[0];
+                car2.vel = vec3(0, 0.0, 0.0);
+                car2.valid = true;
+                car2.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
+                car2.delta_pos = vec3(0, 0, 0);
+                car2.spline_path = enemyPathFunction;
+                car2.max_speed = 25;
+
+                this.shapes.curve = new Curve([enemyPathFunction, 0, 0], 1000);
             }
 
             render_animation(caller) {                                                // display():  Called once per frame of animation.  We'll isolate out
@@ -243,7 +274,7 @@ export class game_world extends game_world_base {                               
             this.shapes.axis.draw(caller, this.uniforms, model_transform,  { ...this.materials.plastic, color: color(0,1,0,1) });
         }
 
-        // Collision debug section 
+        // Collision debug section
         let collision_debug_info = trackCollisionDebug(car, this.curve_fn, 5-0.8, 2*car.scale_factors[0]);
         const track_center_pos = collision_debug_info.track_center;
         const track_horizontal = collision_debug_info.track_horizontal;
@@ -252,7 +283,7 @@ export class game_world extends game_world_base {                               
 
         let track_center_transform = Mat4.scale(0.05, 20, 0.05);
         track_center_transform.pre_multiply(Mat4.translation(track_center_pos[0], track_center_pos[1], track_center_pos[2]));
-        
+
         let wall_transform = Mat4.scale(0.05, 20, 0.05);
         wall_transform.pre_multiply(Mat4.translation(wall_pos[0], wall_pos[1], wall_pos[2]));
 
@@ -263,6 +294,7 @@ export class game_world extends game_world_base {                               
         this.shapes.box.draw(caller, this.uniforms, wall_transform, { ...this.materials.metal, color: color(0, 1, 0, 1) });
         this.shapes.box.draw(caller, this.uniforms, car_collision_transform, { ...this.materials.metal, color: color(1, 0, 0, 1) });
 
+        this.shapes.curve.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
     }
 
     render_controls() {                                 // render_controls(): Sets up a panel of interactive HTML elements, including
@@ -283,7 +315,7 @@ export class game_world extends game_world_base {                               
             () => this.simulation.right_pressed = true, "#6E6460",
             () => this.simulation.right_pressed = false);
         this.new_line();
-        
+
         this.control_panel.innerHTML += "Alternative Controls: <br>";
         this.key_triggered_button("Accelerate", ["ArrowUp"],
             () => this.simulation.accel_pressed = true, undefined,
@@ -299,7 +331,7 @@ export class game_world extends game_world_base {                               
             () => this.simulation.right_pressed = true, undefined,
             () => this.simulation.right_pressed = false);
         this.new_line();
-        
+
         this.control_panel.innerHTML += "Camera Controls: <br>";
         this.key_triggered_button("Attach/Detach Camera", ["Shift", "F"],
             () => this.free_camera =! this.free_camera);

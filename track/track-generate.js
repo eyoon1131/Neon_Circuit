@@ -1,4 +1,5 @@
 import { tiny } from '../tiny-graphics.js';
+import {defs} from "../main-scene.js";
 
 // Pull these names into this module's scope for convenience:
 const { Vector3, Vector4, vec3, vec4, color, Matrix, Mat4, Shape, Shader, Component } = tiny;

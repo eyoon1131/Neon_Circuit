@@ -24,6 +24,7 @@ export class Simulation {
         this.track_fn = null;
         this.track_width = 0;
         this.collision_funcs = [];
+        this.race_start = true;
     }
 
     update(dt) {

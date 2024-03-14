@@ -1,5 +1,6 @@
 import {tiny, defs} from '../examples/common.js';
 import {detectTrackCollision} from "../collision/collision-handling.js";
+import { getFrame, getTimeOnCurve} from "../track/track-generate.js";
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -15,6 +16,7 @@ export class Particle {
         this.valid = false;
         this.scale_factors = vec3(0, 0, 0);
         this.delta_pos = vec3(0, 0, 0);
+        this.max_speed = 0;
     }
 
     update(sim, dt) {
@@ -33,8 +35,8 @@ export class Particle {
 
         this.acc = this.ext_force.times(1.0 / this.mass);
         this.vel = this.vel.plus(this.acc.times(dt));
-        if (this.vel.norm() > 30)
-            this.vel = this.vel.normalized().times(30);
+        if (this.vel.norm() > this.max_speed)
+            this.vel = this.vel.normalized().times(this.max_speed);
         this.pos = this.pos.plus(this.vel.times(dt));
         // }
         // else if (sim.integ_tech === 3) {
@@ -62,8 +64,8 @@ export class Particle {
         // add gravity
         this.ext_force = sim.g_acc.times(this.mass);
         // add ground collision and damping
-        // calculate ground forces
-        // let next_pos = p.pos.plus(p.vel.times(dt));
+        // calculate collision with other particles
+        // let next_pos = this.pos.plus(this.vel.times(dt));
         // if (next_pos[1] < 0) {
         //     const unit_nor = vec3(0, 1, 0);
         //     const collision_dt = (p.pos[1] / (p.pos[1] - next_pos[1])) * dt;
@@ -91,6 +93,25 @@ export class Particle {
             this.ext_force.add_by(vel_unit.times(-kin_friction));
 
         //console.log(this.delta_pos);
+    }
+
+    handle_collision(sim, dt) {
+        let next_pos = this.pos.plus(this.vel.times(dt));
+        for (const p of sim.particles) {
+            if (next_pos[1] < 0) {
+                const unit_nor = vec3(0, 1, 0);
+                const collision_dt = (p.pos[1] / (p.pos[1] - next_pos[1])) * dt;
+                const collision_pos = p.pos.plus(p.vel.times(collision_dt));
+                let deflected_vec = next_pos.minus(collision_pos);
+                deflected_vec[1] = -deflected_vec[1];
+                //const exit_pos = next_pos.plus(deflected_vec);
+                const nor_force = unit_nor.times(this.ground_ks * (deflected_vec.dot(unit_nor))).minus(
+                    unit_nor.times(this.ground_kd * (p.vel.dot(unit_nor))));
+                console.log(p.ext_force)
+                p.ext_force.add_by(nor_force);
+                console.log(p.ext_force)
+            }
+        }
     }
 
     get_rotation() { // gives rotation of particle relative to x-axis in zx plane
@@ -139,9 +160,9 @@ export class Car extends Particle {
         }
 
         if (sim.accel_pressed) 
-            this.ext_force.add_by(this.forward_dir.times(15.0));
+            this.ext_force.add_by(this.forward_dir.times(12.0));
         if (sim.brake_pressed)
-            this.ext_force.subtract_by(this.forward_dir.times(12));
+            this.ext_force.subtract_by(this.forward_dir.times(10));
         if (sim.right_pressed)
             this.ext_force.add_by(this.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
         if (sim.left_pressed)
@@ -159,5 +180,33 @@ export class Car extends Particle {
         if (this.forward_dir[2] < 0)
             theta = (2 * Math.PI - theta);
         return theta;
+    }
+}
+
+export class Enemy extends Particle {
+    constructor() {
+        super();
+        this.CPU = true;
+        this.prev_frame = null;
+    }
+
+    update(sim, dt) {
+        super.update(sim, dt);
+
+    }
+
+    handle_inputs(sim) {
+        super.handle_inputs(sim);
+        const frame = getFrame(this.pos, this.spline_path);
+        const vel_dir = frame[0];
+        const hor_dir = frame[2];
+        const spline_pos = frame[3];
+        const pos_to_spline = spline_pos.minus(this.pos);
+        this.ext_force.add_by(vel_dir.times(12));
+
+        const hor_acc = hor_dir.times(pos_to_spline.dot(hor_dir));
+        this.ext_force.add_by(hor_acc.times(15));
+
+        //this.prev_frame = frame;
     }
 }
