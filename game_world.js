@@ -4,7 +4,7 @@ import {Car} from './new_scripts/particle.js';
 import {Simulation} from './new_scripts/simulation.js';
 import {Spline} from './new_scripts/spline.js';
 import {Curve_Shape} from './new_scripts/shapes.js';
-import { detectTrackCollision } from './collision/collision-handling.js';
+import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -53,14 +53,14 @@ export
 
                 // TODO: you should create the necessary shapes
                 // track setup
-                this.spline = new Spline();
-                this.spline.add_point(0, 0,  50,-200, 0, 0);
-                this.spline.add_point(-50, 0, 0, 0, 0, -200);
-                this.spline.add_point(0, 0, -50, 200, 0, 0);
-                this.spline.add_point(50, 0, 0, 0, 0, 200);
-                this.spline.add_point(0, 0, 50, -200, 0, 0);
-                const curve_fn = (t) => this.spline.get_position(t);
-                this.curve = new Curve_Shape(curve_fn, 1000);
+                // this.spline = new Spline();
+                // this.spline.add_point(0, 0,  50,-200, 0, 0);
+                // this.spline.add_point(-50, 0, 0, 0, 0, -200);
+                // this.spline.add_point(0, 0, -50, 200, 0, 0);
+                // this.spline.add_point(50, 0, 0, 0, 0, 200);
+                // this.spline.add_point(0, 0, 50, -200, 0, 0);
+                // const curve_fn = this.curve_fn = (t) => this.spline.get_position(t);
+                // this.curve = new Curve_Shape(curve_fn, 1000);
                 this.simulation = new Simulation();
     
                 // car setup
@@ -81,7 +81,7 @@ export
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
-                this.simulation.track_fn = curve_fn;
+                // this.simulation.track_fn = curve_fn;
                 this.simulation.track_width = 10;
 
                 // prepare the track
@@ -102,7 +102,7 @@ export
                     vec3(-20, 0, -20),
                     vec3(-20, 0, 20)
                 ];
-                const hermiteFunction =
+                const hermiteFunction=this.curve_fn =
                     HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
                 this.shapes.track = new Track(5, 0.8, 0.4, 0.1, hermiteFunction, 64);
 
@@ -127,13 +127,13 @@ export
                     // orthographic() automatically generate valid matrices for one.  The input arguments of
                     // perspective() are field of view, aspect ratio, and distances to the near plane and far plane.
 
-                    // !!! Camera changed here
-                    const car = this.simulation.particles[0];
-                    const at = car.pos;
-                    //const eye = at.minus(car.forward_dir)
-                    const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
-                    Shader.assign_camera(Mat4.look_at(
-                            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+                    // // !!! Camera changed here
+                    // const car = this.simulation.particles[0];
+                    // const at = car.pos;
+                    // //const eye = at.minus(car.forward_dir)
+                    // const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+                    // Shader.assign_camera(Mat4.look_at(
+                    //         at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
                     }
                     this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
 
@@ -193,30 +193,24 @@ export class game_world extends game_world_base {                               
         let t_step = t;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
-        //let part_vel_xz = this.simulation.particles[0].vel;
-        //part_vel_xz[1] =
-        const car = this.simulation.particles[0];
-        const at = car.pos;
-        //const eye = at.minus(car.forward_dir)
-        const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
-        //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
-        Shader.assign_camera(Mat4.look_at(
-            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+        // //let part_vel_xz = this.simulation.particles[0].vel;
+        // //part_vel_xz[1] =
+        // const car = this.simulation.particles[0];
+        // const at = car.pos;
+        // //const eye = at.minus(car.forward_dir)
+        // const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+        // //console.log(this.simulation.particles[0].pos.minus(this.simulation.particles[0].pos.minus(vec3(10, -5, 0))))
+        // Shader.assign_camera(Mat4.look_at(
+        //     at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
 
         // !!! Draw ground
         let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(10, 0.01, 10));
         this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
 
-        // !!! Draw ball (for reference)
-        let ball_transform = Mat4.translation(this.ball_location[0], this.ball_location[1], this.ball_location[2])
-            .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
-        this.shapes.ball.draw(caller, this.uniforms, ball_transform, { ...this.materials.metal, color: blue });
-
-        // TODO: you should draw spline here.
-        this.curve.draw(caller, this.uniforms);
-
         const t_next = t_step + dt;
         while (t_step < t_next) {
+            // handle track collision
+
             this.simulation.update(this.simulation.timestep);
             //this.simulation.particles[0].pos = this.spline.get_position(Math.sin(t / 4) ** 2);
             //console.log(Math.sin(t / 50) ** 2);
@@ -224,9 +218,6 @@ export class game_world extends game_world_base {                               
             // also handles it
         }
         // from discussion slides
-        //console.log("render");
-        // handle track collision
-
 
         for (const p of this.simulation.particles) {
             const pos = p.pos;
@@ -256,7 +247,6 @@ export class game_world extends game_world_base {                               
             model_transform.pre_multiply(Mat4.rotation(theta, w[0], w[1], w[2]));
             model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
             this.shapes.box.draw(caller, this.uniforms, model_transform, { ...this.materials.metal, color: red });
-
         }
         // render the track with some debug info
         this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
@@ -276,6 +266,30 @@ export class game_world extends game_world_base {                               
             model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
             this.shapes.axis.draw(caller, this.uniforms, model_transform,  { ...this.materials.plastic, color: color(0,1,0,1) });
         }
+
+        // Collision debug section 
+        const car = this.simulation.particles[0];
+        let collision_debug_info = detectTrackCollision(car, this.curve_fn, 5-0.8, 2*car.scale_factors[0]);
+        const track_center_pos = collision_debug_info.track_center;
+        const track_horizontal = collision_debug_info.track_horizontal;
+
+        let collision_handle = trackCollisionDebug(car, track_center_pos ,track_horizontal, 5-0.8, 2*car.scale_factors[0]);
+
+        let track_center_transform = Mat4.scale(0.05, 20, 0.05);
+        track_center_transform.pre_multiply(Mat4.translation(track_center_pos[0], track_center_pos[1], track_center_pos[2]));
+        
+        const wall_pos = collision_handle.wall_pos;
+        const car_collision_point = collision_handle.car_collision_point;
+        let wall_transform = Mat4.scale(0.05, 20, 0.05);
+        wall_transform.pre_multiply(Mat4.translation(wall_pos[0], wall_pos[1], wall_pos[2]));
+
+        let car_collision_transform = Mat4.scale(0.05, 20, 0.05);
+        car_collision_transform.pre_multiply(Mat4.translation(car_collision_point[0], car_collision_point[1], car_collision_point[2]));
+
+        this.shapes.box.draw(caller, this.uniforms, track_center_transform, { ...this.materials.metal, color: color(0, 0, 1, 1) });
+        this.shapes.box.draw(caller, this.uniforms, wall_transform, { ...this.materials.metal, color: color(0, 1, 0, 1) });
+        this.shapes.box.draw(caller, this.uniforms, car_collision_transform, { ...this.materials.metal, color: color(1, 0, 0, 1) });
+
     }
 
     render_controls() {                                 // render_controls(): Sets up a panel of interactive HTML elements, including
@@ -298,29 +312,6 @@ export class game_world extends game_world_base {                               
             () => this.simulation.right_pressed = true, "#6E6460",
             () => this.simulation.right_pressed = false);
 
-
-        /* Some code for your reference
-        this.key_triggered_button( "Copy input", [ "c" ], function() {
-          let text = document.getElementById("input").value;
-          console.log(text);
-          document.getElementById("output").value = text;
-        } );
-        this.new_line();
-        this.key_triggered_button( "Relocate", [ "r" ], function() {
-          let text = document.getElementById("input").value;
-          const words = text.split(' ');
-          if (words.length >= 3) {
-            const x = parseFloat(words[0]);
-            const y = parseFloat(words[1]);
-            const z = parseFloat(words[2]);
-            this.ball_location = vec3(x, y, z)
-            document.getElementById("output").value = "success";
-          }
-          else {
-            document.getElementById("output").value = "invalid input";
-          }
-        } );
-         */
     }
 
     parse_commands() {
