@@ -10,7 +10,7 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 
 // TODO: you should implement the required classes here or in another file.
 
-const CAR_SCALE = 0.2;
+const CAR_SCALE = 0.4;
 
 const TRACK_WIDTH = 10;
 const TRACK_HEIGHT = 0.1;
@@ -108,9 +108,9 @@ export
 
                 const enemyPathPoints = [
                     hermiteCurvePoints[0].plus(vec3(0.2 * TRACK_WIDTH, 0, 0.2 * TRACK_WIDTH)),
-                    hermiteCurvePoints[1].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - 3), 0, (Math.random() - 0.5) * (TRACK_WIDTH - 3))),
-                    hermiteCurvePoints[2].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - 3), 0, (Math.random() - 0.5) * (TRACK_WIDTH - 3))),
-                    hermiteCurvePoints[3].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - 3), 0, (Math.random() - 0.5) * (TRACK_WIDTH - 3))),
+                    hermiteCurvePoints[1].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15))),
+                    hermiteCurvePoints[2].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15))),
+                    hermiteCurvePoints[3].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15))),
                     hermiteCurvePoints[4].plus(vec3(0.2 * TRACK_WIDTH, 0, 0.2 * TRACK_WIDTH))
                 ] , enemyPathTangents = [
                     hermiteCurveTangents[0],
@@ -119,21 +119,20 @@ export
                     hermiteCurveTangents[3],
                     hermiteCurveTangents[4]
                 ];
-                const enemyPathFunction = this.curve_fn2 =
-                    HermiteFactory(enemyPathPoints, enemyPathTangents);
+                const enemyPathFunction = HermiteFactory(enemyPathPoints, enemyPathTangents);
 
                 // enemy 1
                 this.simulation.particles.push(new Enemy());
                 let car2 = this.simulation.particles[1];
                 car2.mass = 1.0;
                 // car.pos = vec3(0, 0, 50);
-                car2.pos = enemyPathPoints[0];
+                car2.pos = vec3(enemyPathPoints[0][0], CAR_SCALE, enemyPathPoints[0][2]);
                 car2.vel = vec3(0, 0.0, 0.0);
                 car2.valid = true;
                 car2.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                 car2.delta_pos = vec3(0, 0, 0);
-                car2.spline_path = enemyPathFunction;
-                car2.max_speed = 25;
+                car2.path_fn = enemyPathFunction;
+                car2.max_speed = 20;
 
                 this.shapes.curve = new Curve([enemyPathFunction, 0, 0], 1000);
             }

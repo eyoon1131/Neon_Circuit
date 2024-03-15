@@ -30,7 +30,7 @@ export class Simulation {
     update(dt) {
         for (const p of this.particles) {
             p.handle_inputs(this);
-
+            p.handle_collision(this);
         }
         for (const collision_func of this.collision_funcs) {
             collision_func(this);
