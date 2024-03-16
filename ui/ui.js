@@ -5,6 +5,18 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
 
+function formatTime(seconds) {
+    var minutes = Math.floor(seconds / 60);
+    var remainingSeconds = Math.floor(seconds % 60);
+    var milliseconds = Math.floor((seconds - Math.floor(seconds)) * 1000);
+    
+    // Ensure each component has two digits
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    remainingSeconds = remainingSeconds < 10 ? '0' + remainingSeconds : remainingSeconds;
+    milliseconds = milliseconds < 10 ? '00' + milliseconds : (milliseconds < 100 ? '0' + milliseconds : milliseconds);
+    
+    return `${minutes}:${remainingSeconds}:${milliseconds}`;
+}
 
 /**
  * UI is the base class for all 2D UI elements.
@@ -138,14 +150,17 @@ export class TopBanner extends UI {
 
         this._enabled = true;
 
-        this.player1_remain = 3;
-        this.player2_remain = 3;
-        this.p1_yoffset = Array(3).fill(0.92);
-        this.p2_yoffset = Array(3).fill(0.92);
+        this.laps_completed = new TextLine('Laps Completed', "roboto-regular", text_color, text_border_color)
+        this.laps_completed.set_position(-0.6, 0.8, 0.001);
+        this.laps_completed.set_extra_space(2.5);
 
-        this.laps_completed_offset = new TextLine('Laps Completed', "roboto-regular", text_color, text_border_color)
-        this.laps_completed_offset.set_position(-0.6, 0.8, 0.001);
-        this.laps_completed_offset.set_extra_space(2.5);
+
+        this.time_text1 = new TextLine('Time', "roboto-regular", text_color, text_border_color)
+        this.time_text1.set_position(0.5, 0.8, 0.001);
+        this.time_text1.set_extra_space(2.5);
+        this.time_text = new TextLine('0', "roboto-regular", text_color, text_border_color)
+        this.time_text.set_position(0.7, 0.8, 0.001);
+        this.time_text.set_extra_space(2.5);
     }
 
     enable() {
@@ -155,28 +170,6 @@ export class TopBanner extends UI {
     disable() {
         this._enabled = false;
     }
-
-    // set_player_remain(player, remain) {
-    //     if (player === 0) {
-    //         for (let i = this.player1_remain; i > remain; i--) {
-    //             // Animate the life to slide up out of the screen.
-    //             setInterval((() => {
-    //                 if (this.p1_yoffset[i - 1] > 1.1) return;
-    //                 this.p1_yoffset[i - 1] += 0.005;
-    //             }).bind(this), 10);
-    //         }
-    //         this.player1_remain = remain;
-    //     } else {
-    //         for (let i = this.player2_remain; i > remain; i--) {
-    //             // Animate the life to slide up out of the screen.
-    //             setInterval((() => {
-    //                 if (this.p2_yoffset[i - 1] > 1.1) return;
-    //                 this.p2_yoffset[i - 1] += 0.005;
-    //             }).bind(this), 10);
-    //         }
-    //         this.player2_remain = remain;
-    //     }
-    // }
 
     display(context, program_state) {
         super.display(context, program_state);
@@ -192,10 +185,14 @@ export class TopBanner extends UI {
         this.text.text = `Untitled Marble Racer`;
         this.text.display(context, program_state);
 
-        this.laps_completed_offset.text = `Laps Completed: ${context.laps_completed}`;
-        this.laps_completed_offset.display(context, program_state);
+        this.laps_completed.text = `Laps Completed: ${context.laps_completed}`;
+        this.laps_completed.display(context, program_state);
 
-        let x = 0.945;
+        this.time_text1.display(context, program_state);
+
+        this.time_text.text =formatTime(context.t)
+        this.time_text.display(context, program_state);
+
 
     }
 }
@@ -445,6 +442,8 @@ export class TextLine extends UI {
         this.color[3] = alpha;
         this.shader.bg_color[3] = alpha;
     }
+
+
 
     /**
      * Set extra spacing between characters.
