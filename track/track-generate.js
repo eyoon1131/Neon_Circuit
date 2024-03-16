@@ -42,7 +42,7 @@ export function getFrame(position, curveFunction) {
 function getFrameFromT(t, curveFunction) {
 
     const point = curveFunction(t);
-    console.log('t = ', t, 'p = ', point);
+    //console.log('t = ', t, 'p = ', point);
     const tangent = _curveDerivative(curveFunction, t).normalized();
     const horizontal = tangent.cross(vec3(0, 1, 0)).normalized();
     const normal = horizontal.cross(tangent).normalized();

@@ -14,81 +14,71 @@ function are_colliding(p1, p2) {
 
 export class Particle {
     constructor() {
+        this.id = 0;
         this.mass = 0;
         this.pos = vec3(0, 0, 0);
         this.vel = vec3(0, 0, 0);
         this.acc = vec3(0, 0, 0);
         this.ext_force = vec3(0, 0, 0);
-        //this.forward_dir = vec3(0, 0, 0);
         this.valid = false;
         this.scale_factors = vec3(0, 0, 0);
         this.delta_pos = vec3(0, 0, 0);
         this.max_speed = 0;
+        this.angle_from_finish = 0;
+        this.laps = 0;
+        this.is_finished = false;
+        this.color = null;
     }
 
     update(sim, dt) {
         if (!this.valid)
             throw "Not initialized"
-        // forward euler
-        // if (sim.integ_tech === 1) {
-        //     this.acc = this.ext_force.times(1.0 / this.mass);
-        //     this.pos = this.pos.plus(this.vel.times(dt));
-        //     this.vel = this.vel.plus(this.acc.times(dt));
-        //     if (this.vel.norm() > 30)
-        //         this.vel = this.vel.normalized().times(30);
-        // }
-        // else if (sim.integ_tech === 2) {
+
         const old_pos = this.pos;
+        const old_angle_from_finish = this.angle_from_finish;
 
         this.acc = this.ext_force.times(1.0 / this.mass);
         this.vel = this.vel.plus(this.acc.times(dt));
         if (this.vel.norm() > this.max_speed)
             this.vel = this.vel.normalized().times(this.max_speed);
         this.pos = this.pos.plus(this.vel.times(dt));
-        // }
-        // else if (sim.integ_tech === 3) {
-        //     this.pos = this.pos.plus(this.vel.times(dt)).plus(this.acc.times(dt**2 / 2));
-        //     const new_acc = this.ext_force.times(1.0 / this.mass);
-        //     this.vel = this.vel.plus(this.acc.plus(new_acc).times(dt / 2));
-        //     if (this.vel.norm() > 30)
-        //         this.vel = this.vel.normalized().times(30);
-        //     this.acc = new_acc;
-        // }
-        if (this.pos[1] < 0)
-            this.pos[1] = 0;
+
         this.delta_pos = this.pos.minus(old_pos);
-        //console.log(this.pos)
-        // if (this.vel[0] !== 0 || this.vel[2] !== 0) {
-        //     const vel_zx = this.vel.normalized();
-        //     //vel_zx[1] = 0;
-        //     if (this.forward_dir.dot(vel_zx) > 0)
-        //         this.forward_dir = vel_zx;
-        // }
-        // console.log(this.vel.norm())
+
+        if (this.is_finished)
+            return;
+
+        const pos_zx = vec3(this.pos[0], 0, this.pos[2]);
+        const finish_zx = vec3(sim.finish_line[0], 0, sim.finish_line[2]);
+        let cos_pf = pos_zx.normalized().dot(finish_zx.normalized());
+        if (cos_pf > 1)
+            cos_pf = 1;
+        else if (cos_pf < -1)
+            cos_pf = -1;
+        this.angle_from_finish = Math.acos(cos_pf);
+        // angle_from_finish is angle from finish line to position vector
+        // cars travel ccw in zx plane
+        // if finish line is in +z half, if x pos of car is below finish line, then car is behind finish line
+        // if finish line is in -z half, if x pos of car is above finish line, then car is behind finish line
+        if (sim.finish_line[2] > 0 && this.pos[0] < sim.finish_line_slope * this.pos[2])
+            this.angle_from_finish = (2 * Math.PI - this.angle_from_finish);
+        else if (sim.finish_line[2] < 0 && this.pos[0] > sim.finish_line_slope * this.pos[2])
+            this.angle_from_finish = (2 * Math.PI - this.angle_from_finish);
+        const delta_angle = this.angle_from_finish - old_angle_from_finish;
+
+        if (delta_angle < -6)
+            this.laps++;
+        if (this.laps === sim.lap_goal) {
+            this.is_finished = true;
+            sim.leaderboard.push([this.id, sim.elapsed_time]);
+            return;
+        }
+        if (delta_angle > 6)
+            this.laps--;
+
     }
 
     handle_inputs(sim) {
-        // add gravity
-        //this.ext_force = sim.g_acc.times(this.mass);
-        // add ground collision and damping
-        // calculate collision with other particles
-        // let next_pos = this.pos.plus(this.vel.times(dt));
-        // if (next_pos[1] < 0) {
-        //     const unit_nor = vec3(0, 1, 0);
-        //     const collision_dt = (p.pos[1] / (p.pos[1] - next_pos[1])) * dt;
-        //     const collision_pos = p.pos.plus(p.vel.times(collision_dt));
-        //     let deflected_vec = next_pos.minus(collision_pos);
-        //     deflected_vec[1] = -deflected_vec[1];
-        //     //const exit_pos = next_pos.plus(deflected_vec);
-        //     const nor_force = unit_nor.times(this.ground_ks * (deflected_vec.dot(unit_nor))).minus(
-        //         unit_nor.times(this.ground_kd * (p.vel.dot(unit_nor))));
-        //     console.log(p.ext_force)
-        //     p.ext_force.add_by(nor_force);
-        //     console.log(p.ext_force)
-        // }
-
-        //let vel_zx = this.vel;
-        //vel_zx[1] = 0;
         this.ext_force = vec3(0, 0, 0);
         const vel_unit = this.vel.normalized();
 
@@ -139,17 +129,6 @@ export class Car extends Particle {
         if (sim.right_pressed)
             this.forward_dir = this.right_turn_matrix.times(this.forward_dir.to4(1)).to3();
 
-
-        // if (this.vel[0] !== 0 || this.vel[2] !== 0) {
-        //     const vel_zx = this.vel.normalized();
-        //     //vel_zx[1] = 0;
-        //     //if (this.forward_dir.dot(vel_zx) > 0)
-        //     this.forward_dir = vel_zx;
-        //     // console.log("VEL", this.vel)
-        //     // console.log("FORWARD", this.forward_dir)
-        // }
-        // // console.log(this.vel.norm())
-        // // console.log(this.ext_force)
     }
 
     handle_inputs(sim) {
@@ -172,10 +151,6 @@ export class Car extends Particle {
         if (sim.left_pressed)
             this.ext_force.subtract_by(this.forward_dir.cross(vec3(0, 1, 0)).times(stat_friction));
 
-        // collision detection with wall (doesn't work)
-        // detectCollisionOnTrack(this, sim.track_fn, sim.track_width, this.scale_factors[0] * 2);
-
-        // console.log(p.ext_force)
     }
 
     get_rotation() {

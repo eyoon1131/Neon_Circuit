@@ -11,9 +11,6 @@ export class Simulation {
         this.particles = [];
         this.springs = [];
         this.g_acc = vec3(0, 0, 0);
-        this.ground_ks = 0;
-        this.ground_kd = 0;
-        this.integ_tech = 0;
         this.timestep = 0;
         this.accel_pressed = false;
         this.brake_pressed = false;
@@ -21,13 +18,22 @@ export class Simulation {
         this.right_pressed = false;
         this.u_static = 0;
         this.u_kinetic = 0;
-        this.track_fn = null;
-        this.track_width = 0;
         this.collision_funcs = [];
-        this.race_start = true;
+        this.paused = false;
+        this.elapsed_time = 0;
+        this.finish_line = vec3(0, 0, 0);
+        this.finish_line_slope = 0;
+        this.lap_goal = 0;
+        this.leaderboard = [];
     }
 
     update(dt) {
+        if (this.paused)
+            return;
+        this.elapsed_time += this.timestep;
+        //console.log(this.elapsed_time);
+        if (this.elapsed_time < 3)
+            return;
         for (const p of this.particles) {
             p.handle_inputs(this);
             p.handle_collision(this);
@@ -41,5 +47,7 @@ export class Simulation {
         for (const p of this.particles) {
             p.update(this, dt);
         }
+        console.log(this.leaderboard);
+
     }
 }
