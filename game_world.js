@@ -18,6 +18,16 @@ const TRACK_WALL_WIDTH = 0.8;
 const TRACK_WALL_HEIGHT = 0.4;
 const TRACK_DIVISIONS = 100;
 
+const NUM_CARS = 4;
+
+function get_start_offset(i) {
+    // cars placed from -0.3 * TRACK_WIDTH to 0.3 * TRACK_WIDTH
+    // user at -0.3 * TRACK_WIDTH
+    //const car_num = i + 1;
+    const car_spacing = TRACK_WIDTH * 0.6 / (NUM_CARS - 1);
+    return -0.3 * TRACK_WIDTH + i * car_spacing;
+}
+
 export
     const game_world_base = defs.game_world_base =
         class game_world_base extends Component {                                          // **My_Demo_Base** is a Scene that can be added to any display canvas.
@@ -69,18 +79,6 @@ export
                 // this.simulation.track_fn = curve_fn;
 
 
-                // car setup
-                this.simulation.particles.push(new Car());
-                let car = this.simulation.particles[0];
-                car.mass = 1.0;
-                car.pos = vec3(-15, CAR_SCALE, -15)
-                car.vel = vec3(0.0, 0.0, 0.0);
-                car.valid = true;
-                car.forward_dir = vec3(-1, 0, 0);
-                car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
-                car.delta_pos = vec3(0, 0, 0);
-                car.max_speed = 20;
-
                 // prepare the track
                 const hermiteCurvePoints = [
                     vec3(-15, -TRACK_HEIGHT, -15),
@@ -106,35 +104,54 @@ export
                     TRACK_DIVISIONS
                 );
 
-                const enemyPathPoints = [
-                    hermiteCurvePoints[0].plus(vec3(0.2 * TRACK_WIDTH, 0, 0.2 * TRACK_WIDTH)),
-                    hermiteCurvePoints[1].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15))),
-                    hermiteCurvePoints[2].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15))),
-                    hermiteCurvePoints[3].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 15))),
-                    hermiteCurvePoints[4].plus(vec3(0.2 * TRACK_WIDTH, 0, 0.2 * TRACK_WIDTH))
-                ] , enemyPathTangents = [
-                    hermiteCurveTangents[0],
-                    hermiteCurveTangents[1],
-                    hermiteCurveTangents[2],
-                    hermiteCurveTangents[3],
-                    hermiteCurveTangents[4]
-                ];
-                const enemyPathFunction = HermiteFactory(enemyPathPoints, enemyPathTangents);
+                // car setup
+                this.simulation.particles.push(new Car());
+                let car = this.simulation.particles[0];
+                car.mass = 1.0;
+                //car.pos = vec3(hermiteCurvePoints[0][0] - 0.3 * TRACK_WIDTH, CAR_SCALE, hermiteCurvePoints[0][2] - 0.3 * TRACK_WIDTH);
+                car.pos = vec3(hermiteCurvePoints[0][0] + get_start_offset(0), CAR_SCALE, hermiteCurvePoints[0][2] + get_start_offset(0));
+                car.vel = vec3(0.0, 0.0, 0.0);
+                car.valid = true;
+                car.forward_dir = vec3(-1, 0, 1).normalized();
+                car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
+                car.delta_pos = vec3(0, 0, 0);
+                car.max_speed = 20;
 
-                // enemy 1
-                this.simulation.particles.push(new Enemy());
-                let car2 = this.simulation.particles[1];
-                car2.mass = 1.0;
-                // car.pos = vec3(0, 0, 50);
-                car2.pos = vec3(enemyPathPoints[0][0], CAR_SCALE, enemyPathPoints[0][2]);
-                car2.vel = vec3(0, 0.0, 0.0);
-                car2.valid = true;
-                car2.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
-                car2.delta_pos = vec3(0, 0, 0);
-                car2.path_fn = enemyPathFunction;
-                car2.max_speed = 20;
+                this.shapes.curves = [];
 
-                this.shapes.curve = new Curve([enemyPathFunction, 0, 0], 1000);
+                for (let i = 1; i < NUM_CARS; i++) {
+                    const enemyPathPoints = [
+                        //hermiteCurvePoints[0].plus(vec3((i - 1) * 0.3 * TRACK_WIDTH , 0, (i - 1) * 0.3 * TRACK_WIDTH)),
+                        hermiteCurvePoints[0].plus(vec3(get_start_offset(i), 0, get_start_offset(i))),
+                        hermiteCurvePoints[1].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10))),
+                        hermiteCurvePoints[2].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10))),
+                        hermiteCurvePoints[3].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10))),
+                        hermiteCurvePoints[4].plus(vec3(get_start_offset(i), 0, get_start_offset(i))),
+                    ] , enemyPathTangents = [
+                        hermiteCurveTangents[0],
+                        hermiteCurveTangents[1],
+                        hermiteCurveTangents[2],
+                        hermiteCurveTangents[3],
+                        hermiteCurveTangents[4]
+                    ];
+                    const enemyPathFunction = HermiteFactory(enemyPathPoints, enemyPathTangents);
+
+                    // enemy 1
+                    this.simulation.particles.push(new Enemy());
+                    let car = this.simulation.particles[i];
+                    car.mass = 1.0;
+                    // car.pos = vec3(0, 0, 50);
+                    car.pos = vec3(enemyPathPoints[0][0], CAR_SCALE, enemyPathPoints[0][2]);
+                    car.vel = vec3(0, 0.0, 0.0);
+                    car.valid = true;
+                    car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
+                    car.delta_pos = vec3(0, 0, 0);
+                    car.path_fn = enemyPathFunction;
+                    car.max_speed = 22;
+
+                    //this.shapes.curve2 = new Curve([enemy2PathFunction, 0, 0], 1000);
+                    this.shapes.curves.push(new Curve([enemyPathFunction, 0, 0], 1000));
+                }
             }
 
             render_animation(caller) {                                                // display():  Called once per frame of animation.  We'll isolate out
@@ -293,7 +310,11 @@ export class game_world extends game_world_base {                               
         this.shapes.box.draw(caller, this.uniforms, wall_transform, { ...this.materials.metal, color: color(0, 1, 0, 1) });
         this.shapes.box.draw(caller, this.uniforms, car_collision_transform, { ...this.materials.metal, color: color(1, 0, 0, 1) });
 
-        this.shapes.curve.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+        for (let i = 0; i < this.shapes.curves.length; i++) {
+            this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+        }
+        //this.shapes.curve1.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+        //this.shapes.curve2.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
     }
 
     render_controls() {                                 // render_controls(): Sets up a panel of interactive HTML elements, including

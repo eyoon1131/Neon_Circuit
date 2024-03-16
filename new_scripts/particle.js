@@ -204,7 +204,7 @@ export class Enemy extends Particle {
 
         const hor_acc = hor_dir.times(pos_to_spline.dot(hor_dir));
         if (hor_acc.norm() !== 0)
-            this.ext_force.add_by(hor_acc.normalized().times(this.vel.norm() * 1.1));
+            this.ext_force.add_by(hor_acc.normalized().times(this.vel.norm() * 1.2));
 
 
     }
