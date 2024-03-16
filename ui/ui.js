@@ -29,30 +29,6 @@ export class UI {
     constructor() {
         this.projection_inverse = Mat4.identity();
     }
-
-    /**
-     * Get the current player's turn.
-     * @returns {number} 0 for player 1, 1 for player 2.
-     */
-    static get player() {
-        return UI.turn;
-    }
-
-    /**
-     * Set the current player's turn.
-     * @param p 0 for player 1, 1 for player 2.
-     */
-    static set player(p) {
-        UI.turn = p;
-    }
-
-    /**
-     * Switch to the next player's turn.
-     */
-    static switch_player() {
-        UI.turn = 1 - UI.turn;
-    }
-
     /**
      * Update camera transform. Must be called before display each time the camera is moved.
      * @param look_at The current camera transform of the scene.
@@ -237,16 +213,6 @@ export class GameAnimation extends UIAnimation {
         this.text = this.text_p1;
     }
 
-    set_winner(player) {
-        if (player === 0) {
-            this.text = this.text_p1;
-        } else if (player === 1) {
-            this.text = this.text_p2;
-        } else if (player === 2) {
-            this.text = this.text_p3;
-        }
-        // this.text = player === 0 ? this.text_p1 : this.text_p2;
-    }
 
     display(context, program_state) {
         super.display(context, program_state);
@@ -565,12 +531,6 @@ class TextShape extends Shape {
         }
 
         this.copy_onto_graphics_card(context);
-        // if (!this.existing) {
-        //     this.copy_onto_graphics_card(context);
-        //     this.existing = true;
-        // } else {
-        //     this.copy_onto_graphics_card(context, ["texture_coord"], false);
-        // }
     }
 
     /**
