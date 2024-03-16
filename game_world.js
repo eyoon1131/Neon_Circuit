@@ -71,11 +71,7 @@ export
                 this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1) }
                 this.materials.metal = { shader: phong, ambient: .2, diffusivity: 1, specularity: 1, color: color(.9, .5, .9, 1) }
                 this.materials.rgb = { shader: tex_phong, ambient: .5, texture: new Texture("assets/rgb.jpg") }
-                this.materials.track = {
-                    shader: new defs.Textured_Phong(1), color: color(.5, .5, .5, 1),
-                    ambient: .3, diffusivity: .5, specularity: .5,
-                    texture: new Texture(`/assets/car/PLR.png`)
-                };
+
                 // simulation setup
                 this.simulation = new Simulation();
                 this.simulation.g_acc = vec3(0, -9.8, 0);
@@ -310,7 +306,7 @@ export class game_world extends game_world_base {                               
         }
 
         // render the track with some debug info
-        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), this.materials.track);
+        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
         for (let p of this.shapes.track.arrays.position) {
             let model_transform = Mat4.scale(0.05, 0.05, 0.05);
             model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));

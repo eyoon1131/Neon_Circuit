@@ -101,8 +101,11 @@ export class CarShape extends Shape {
 
     draw(caller, uniforms, model_transform) {               // draw(): Same as always for shapes, but cancel all
         // attempts to draw the shape before it loads:
-        if (this.ready)
-            super.draw(caller, uniforms, model_transform, this.material);
+        
+        if (!this.ready) return;
+        model_transform.pre_multiply(Mat4.translation(0,0.7,0));
+        model_transform = model_transform.times(Mat4.scale(1.3,1.3,1.3));
+        super.draw(caller, uniforms, model_transform, this.material);
     }
 
 }
