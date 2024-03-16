@@ -5,6 +5,13 @@ import { getFrame, getTimeOnCurve} from "../track/track-generate.js";
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
+function are_colliding(p1, p2) {
+    if (p1 === p2)
+        return false;
+    const dist = p1.pos.minus(p2.pos).norm();
+    return dist <= p1.scale_factors[0] + p2.scale_factors[0];
+}
+
 export class Particle {
     constructor() {
         this.mass = 0;
@@ -62,7 +69,7 @@ export class Particle {
 
     handle_inputs(sim) {
         // add gravity
-        this.ext_force = sim.g_acc.times(this.mass);
+        //this.ext_force = sim.g_acc.times(this.mass);
         // add ground collision and damping
         // calculate collision with other particles
         // let next_pos = this.pos.plus(this.vel.times(dt));
@@ -82,10 +89,11 @@ export class Particle {
 
         //let vel_zx = this.vel;
         //vel_zx[1] = 0;
+        this.ext_force = vec3(0, 0, 0);
         const vel_unit = this.vel.normalized();
 
-        const norm_force = this.ext_force.times(-1);
-        this.ext_force.add_by(norm_force);
+        const norm_force = sim.g_acc.times(-this.mass);
+        //this.ext_force.add_by(norm_force);
         //console.log(p.ext_force)
         //console.log(p.vel)
         const kin_friction = norm_force.norm() * sim.u_kinetic;
@@ -95,21 +103,17 @@ export class Particle {
         //console.log(this.delta_pos);
     }
 
-    handle_collision(sim, dt) {
-        let next_pos = this.pos.plus(this.vel.times(dt));
+    handle_collision(sim) {
+        //let next_pos = this.pos.plus(this.vel.times(dt));
         for (const p of sim.particles) {
-            if (next_pos[1] < 0) {
-                const unit_nor = vec3(0, 1, 0);
-                const collision_dt = (p.pos[1] / (p.pos[1] - next_pos[1])) * dt;
-                const collision_pos = p.pos.plus(p.vel.times(collision_dt));
-                let deflected_vec = next_pos.minus(collision_pos);
-                deflected_vec[1] = -deflected_vec[1];
-                //const exit_pos = next_pos.plus(deflected_vec);
-                const nor_force = unit_nor.times(this.ground_ks * (deflected_vec.dot(unit_nor))).minus(
-                    unit_nor.times(this.ground_kd * (p.vel.dot(unit_nor))));
-                console.log(p.ext_force)
-                p.ext_force.add_by(nor_force);
-                console.log(p.ext_force)
+            if (are_colliding(this, p)) {
+                const total_vel = this.vel.plus(p.vel).norm();
+                //console.log(total_vel);
+                let this_to_p = p.pos.minus(this.pos);
+                this_to_p[1] = 0;
+                this_to_p.normalize();
+                this.ext_force.add_by(this_to_p.times(-(total_vel ** 2)))
+                p.ext_force.add_by(this_to_p.times(total_vel ** 2));
             }
         }
     }
@@ -186,18 +190,12 @@ export class Car extends Particle {
 export class Enemy extends Particle {
     constructor() {
         super();
-        this.CPU = true;
-        this.prev_frame = null;
-    }
-
-    update(sim, dt) {
-        super.update(sim, dt);
-
+        this.path_fn = null;
     }
 
     handle_inputs(sim) {
         super.handle_inputs(sim);
-        const frame = getFrame(this.pos, this.spline_path);
+        const frame = getFrame(this.pos, this.path_fn);
         const vel_dir = frame[0];
         const hor_dir = frame[2];
         const spline_pos = frame[3];
@@ -206,8 +204,8 @@ export class Enemy extends Particle {
 
         const hor_acc = hor_dir.times(pos_to_spline.dot(hor_dir));
         if (hor_acc.norm() !== 0)
-            this.ext_force.add_by(hor_acc.normalized().times(100));
+            this.ext_force.add_by(hor_acc.normalized().times(this.vel.norm() * 1.2));
 
-        //this.prev_frame = frame;
+
     }
 }
