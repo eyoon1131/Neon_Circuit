@@ -1,9 +1,8 @@
-import {tiny, defs} from './examples/common.js';
+import {defs, tiny} from './examples/common.js';
 import {Curve, HermiteFactory, Track} from './track/track-generate.js';
-import {Car, Enemy, Particle} from './new_scripts/particle.js';
+import {Car, Enemy} from './new_scripts/particle.js';
 import {Simulation} from './new_scripts/simulation.js';
-import {Curve_Shape} from './new_scripts/shapes.js';
-import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
+import {detectTrackCollision, trackCollisionDebug} from './collision/collision-handling.js';
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -21,11 +20,11 @@ const TRACK_DIVISIONS = 100;
 const NUM_CARS = 4;
 
 function get_start_offset(i) {
-    // cars placed from -0.3 * TRACK_WIDTH to 0.3 * TRACK_WIDTH
-    // user at -0.3 * TRACK_WIDTH
+    // cars placed from -0.25 * TRACK_WIDTH to 0.25 * TRACK_WIDTH
+    // user at -0.25 * TRACK_WIDTH
     //const car_num = i + 1;
-    const car_spacing = TRACK_WIDTH * 0.6 / (NUM_CARS - 1);
-    return -0.3 * TRACK_WIDTH + i * car_spacing;
+    const car_spacing = TRACK_WIDTH * 0.5 / (NUM_CARS - 1);
+    return -0.25 * TRACK_WIDTH + i * car_spacing;
 }
 
 export
@@ -71,9 +70,11 @@ export
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
+                this.simulation.lap_goal = 5;
                 // collision handling
                 this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH-TRACK_WALL_WIDTH/2, 2*car.scale_factors[0]));
-                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[1], hermiteFunction, TRACK_WIDTH-TRACK_WALL_WIDTH/2, 2*car.scale_factors[0]));
+
+
                 // this.simulation.track_width = 10;
                 // this.simulation.integ_tech = 2;
                 // this.simulation.track_fn = curve_fn;
@@ -103,10 +104,16 @@ export
                     hermiteFunction,
                     TRACK_DIVISIONS
                 );
+                this.simulation.finish_line = hermiteCurvePoints[0];
+                this.simulation.finish_line_slope = hermiteCurvePoints[0][0] / hermiteCurvePoints[0][2];
+
+                const blue = color(0, 0, 1, 1), yellow = color(0.7, 1, 0, 1), red = color(1, 0, 0, 1), purple = color(0.5, 0, 0.5, 1);
+                const colors = [blue, yellow, red, purple];
 
                 // car setup
                 this.simulation.particles.push(new Car());
                 let car = this.simulation.particles[0];
+                car.id = 1;
                 car.mass = 1.0;
                 //car.pos = vec3(hermiteCurvePoints[0][0] - 0.3 * TRACK_WIDTH, CAR_SCALE, hermiteCurvePoints[0][2] - 0.3 * TRACK_WIDTH);
                 car.pos = vec3(hermiteCurvePoints[0][0] + get_start_offset(0), CAR_SCALE, hermiteCurvePoints[0][2] + get_start_offset(0));
@@ -116,6 +123,7 @@ export
                 car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                 car.delta_pos = vec3(0, 0, 0);
                 car.max_speed = 20;
+                car.color = blue;
 
                 this.shapes.curves = [];
 
@@ -139,6 +147,7 @@ export
                     // enemy 1
                     this.simulation.particles.push(new Enemy());
                     let car = this.simulation.particles[i];
+                    car.id = i + 1;
                     car.mass = 1.0;
                     // car.pos = vec3(0, 0, 50);
                     car.pos = vec3(enemyPathPoints[0][0], CAR_SCALE, enemyPathPoints[0][2]);
@@ -147,7 +156,10 @@ export
                     car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                     car.delta_pos = vec3(0, 0, 0);
                     car.path_fn = enemyPathFunction;
-                    car.max_speed = 22;
+                    car.max_speed = 20;
+                    car.color = colors[i];
+
+                    this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[i], hermiteFunction, TRACK_WIDTH-TRACK_WALL_WIDTH/2, 2*car.scale_factors[0]));
 
                     //this.shapes.curve2 = new Curve([enemy2PathFunction, 0, 0], 1000);
                     this.shapes.curves.push(new Curve([enemyPathFunction, 0, 0], 1000));
@@ -161,8 +173,8 @@ export
 
                 // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
                 if (!caller.controls) {
-                    this.animated_children.push(caller.controls = new defs.Movement_Controls({ uniforms: this.uniforms }));
-                    caller.controls.add_mouse_controls(caller.canvas);
+                    //this.animated_children.push(caller.controls = new defs.Movement_Controls({ uniforms: this.uniforms }));
+                    //caller.controls.add_mouse_controls(caller.canvas);
 
                     // Define the global camera and projection matrices, which are stored in shared_uniforms.  The camera
                     // matrix follows the usual format for transforms, but with opposite values (cameras exist as
@@ -195,6 +207,7 @@ export
                 this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
 
                 //this.curve = new Curve_Shape(this.spline.get_position(t), 1000);
+
             }
         }
 
@@ -231,12 +244,13 @@ export class game_world extends game_world_base {                               
         // translation(), scale(), and rotation() to generate matrices, and the
         // function times(), which generates products of matrices.
 
-        const blue = color(0, 0, 1, 1), yellow = color(0.7, 1, 0, 1), red = color(1, 0, 0, 1);
+        const blue = color(0, 0, 1, 1), yellow = color(0.7, 1, 0, 1), red = color(1, 0, 0, 1), purple = color(0.5, 0, 0.5, 1);
 
-        const t = this.t = this.uniforms.animation_time / 1000;
-        let t_step = t;
+        let t_step = this.t = this.uniforms.animation_time / 1000;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
+        if (t_step > 3)
+            this.simulation.race_start = true;
 
         const car = this.simulation.particles[0];
         const at = car.pos;
@@ -261,6 +275,7 @@ export class game_world extends game_world_base {                               
         }
         // from discussion slides
 
+        let i = 0;
         for (const p of this.simulation.particles) {
             const pos = p.pos;
             const scale = p.scale_factors;
@@ -268,7 +283,7 @@ export class game_world extends game_world_base {                               
             let theta = p.get_rotation();
             model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
-            this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: blue });
+            this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
         }
 
         // render the track with some debug info
@@ -313,25 +328,31 @@ export class game_world extends game_world_base {                               
         for (let i = 0; i < this.shapes.curves.length; i++) {
             this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
         }
-        //this.shapes.curve1.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
-        //this.shapes.curve2.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+
+        let finish_line_transform = Mat4.scale(0.2, 0.01 , TRACK_WIDTH * 0.5);
+        finish_line_transform.pre_multiply(Mat4.rotation(
+            Math.atan(this.simulation.finish_line[0] / this.simulation.finish_line[2]),
+            0, 1, 0
+        ));
+        finish_line_transform.pre_multiply(Mat4.translation(this.simulation.finish_line[0], this.simulation.finish_line[1], this.simulation.finish_line[2]));
+        this.shapes.box.draw(caller, this.uniforms, finish_line_transform, { ...this.materials.metal, color: color(1, 1, 1, 1) });
     }
 
     render_controls() {                                 // render_controls(): Sets up a panel of interactive HTML elements, including
         // buttons with key bindings for affecting this scene, and live info readouts.
         this.control_panel.innerHTML += "Controls: <br>";
 
-        this.key_triggered_button("Accelerate", ["i"],
+        this.key_triggered_button("Accelerate", ["w"],
             () => this.simulation.accel_pressed = true, "#6E6460",
             () => this.simulation.accel_pressed = false);
-        this.key_triggered_button("Brake", ["k"],
+        this.key_triggered_button("Brake", ["s"],
             () => this.simulation.brake_pressed = true, "#6E6460",
             () => this.simulation.brake_pressed = false);
         this.new_line();
-        this.key_triggered_button("Left", ["j"],
+        this.key_triggered_button("Left",["a"],
             () => this.simulation.left_pressed = true, "#6E6460",
             () => this.simulation.left_pressed = false);
-        this.key_triggered_button("Right", ["l"],
+        this.key_triggered_button("Right", ["d"],
             () => this.simulation.right_pressed = true, "#6E6460",
             () => this.simulation.right_pressed = false);
         this.new_line();
@@ -355,6 +376,12 @@ export class game_world extends game_world_base {                               
         this.control_panel.innerHTML += "Camera Controls: <br>";
         this.key_triggered_button("Attach/Detach Camera", ["Shift", "F"],
             () => this.free_camera =! this.free_camera);
+        this.new_line();
+
+        this.control_panel.innerHTML += "Game Options: <br>";
+        this.key_triggered_button("Pause", ["Escape"],
+            () => this.simulation.paused =! this.simulation.paused);
+
 
     }
 

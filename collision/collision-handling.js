@@ -24,7 +24,7 @@ function detectTrackCollision(particle, track_function, track_width, car_width){
     // check if car is outside track
     if (distance  <=  car_width/ 2){
         // console.log("track center", track_center)
-        console.log("collision happening!");
+        //console.log("collision happening!");
         // console.log(distance, track_width / 2, car_width / 2)
         particle.collided = true;
         handleTrackCollision(particle, track_center, track_horizontal, track_width, car_width, distance)
