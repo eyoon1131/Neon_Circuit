@@ -6,6 +6,7 @@ import {detectTrackCollision, trackCollisionDebug} from './collision/collision-h
 
 import {GameAnimation, TopBanner, TurnAnimation, UI} from "./ui/ui.js";
 import {Scene2Texture} from "./ui/scene2texture.js";
+import { CarShape } from './car/car.js';
 
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
@@ -51,7 +52,13 @@ export
                 this.shapes = {
                     'box': new defs.Cube(),
                     'ball': new defs.Subdivision_Sphere(4),
-                    'axis': new defs.Axis_Arrows()
+                    'axis': new defs.Axis_Arrows(),
+                    'cars': {
+                        1: new CarShape('PLR.png'),
+                        2: new CarShape('YLO.png'),
+                        3: new CarShape('RED.png'),
+                        4: new CarShape('PUR.png'),
+                    }
                 };
 
                 // *** Materials: ***  A "material" used on individual shapes specifies all fields
@@ -64,7 +71,11 @@ export
                 this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1) }
                 this.materials.metal = { shader: phong, ambient: .2, diffusivity: 1, specularity: 1, color: color(.9, .5, .9, 1) }
                 this.materials.rgb = { shader: tex_phong, ambient: .5, texture: new Texture("assets/rgb.jpg") }
-
+                this.materials.track = {
+                    shader: new defs.Textured_Phong(1), color: color(.5, .5, .5, 1),
+                    ambient: .3, diffusivity: .5, specularity: .5,
+                    texture: new Texture(`/assets/car/PLR.png`)
+                };
                 // simulation setup
                 this.simulation = new Simulation();
                 this.simulation.g_acc = vec3(0, -9.8, 0);
@@ -294,11 +305,12 @@ export class game_world extends game_world_base {                               
             let theta = p.get_rotation();
             model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
-            this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
+            //this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
+            this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
         }
 
         // render the track with some debug info
-        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), this.materials.track);
         for (let p of this.shapes.track.arrays.position) {
             let model_transform = Mat4.scale(0.05, 0.05, 0.05);
             model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
