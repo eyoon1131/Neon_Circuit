@@ -17,6 +17,7 @@ const {
 export class CarShape extends Shape {
     constructor(textureName) {
         super("position", "normal", "texture_coord");
+        this.phase = Math.random();
         // Begin downloading the mesh. Once that completes, return
         // control to our parse_into_mesh function.
         this.load_file('/assets/car/car.obj');
@@ -103,8 +104,11 @@ export class CarShape extends Shape {
         // attempts to draw the shape before it loads:
         
         if (!this.ready) return;
-        model_transform.pre_multiply(Mat4.translation(0,0.7,0));
-        model_transform = model_transform.times(Mat4.scale(1.3,1.3,1.3));
+        let t = uniforms.animation_time/1000.0;
+        model_transform.pre_multiply(Mat4.translation(0,0.33 + 
+            Math.sin((2+this.phase/2)*Math.PI*t + this.phase)/48 // realistic hover
+            ,0));
+       // model_transform = model_transform.times(Mat4.scale(1.3,1.3,1.3));
         super.draw(caller, uniforms, model_transform, this.material);
     }
 
