@@ -22,6 +22,9 @@ const TRACK_DIVISIONS = 100;
 
 const NUM_CARS = 4;
 
+// UI
+const START_ANIMATION_LENGTH = 4;
+
 function get_start_offset(i) {
     // cars placed from -0.25 * TRACK_WIDTH to 0.25 * TRACK_WIDTH
     // user at -0.25 * TRACK_WIDTH
@@ -258,10 +261,21 @@ export class game_world extends game_world_base {                               
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
         /**** UI *****/
-        // console.log(caller)
         Scene2Texture.draw(caller, this.uniforms);
-        if (t_step > 3)
+        if (!this.game_animation.started){
+            this.game_animation.start()
+            // this.turn_animation.start();
+        }
+        this.game_animation.time_now = t_step;
+        if (t_step > START_ANIMATION_LENGTH){
+            this.game_animation.end()
+        }
+
+        if (t_step > 3){
             this.simulation.race_start = true;
+            this.top_banner.update_time(t_step-3);
+        }
+
 
         const car = this.simulation.particles[0];
         const at = car.pos;

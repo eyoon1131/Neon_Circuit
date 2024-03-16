@@ -103,21 +103,7 @@ export class TopBanner extends UI {
                 diffusivity: 0,
                 specularity: 0,
                 color: background_color,
-            },
-            lives_p1: {
-                shader: new defs.Phong_Shader(), 
-                ambient: 1,
-                diffusivity: 0,
-                specularity: 0,
-                color: color(1,0,0,1),
-            },
-            lives_p2: {
-                shader: new defs.Phong_Shader(),
-                ambient: 1,
-                diffusivity: 0,
-                specularity: 0,
-                color: color(0,0.4,1,1),
-            },
+            }
         };
 
         this.text = new TextLine('Untitled Marble Racer', "blomberg", text_color, text_border_color);
@@ -131,12 +117,17 @@ export class TopBanner extends UI {
         this.laps_completed.set_extra_space(2.5);
 
 
+        this.race_time = 0;
         this.time_text1 = new TextLine('Time', "roboto-regular", text_color, text_border_color)
         this.time_text1.set_position(0.5, 0.8, 0.001);
         this.time_text1.set_extra_space(2.5);
         this.time_text = new TextLine('0', "roboto-regular", text_color, text_border_color)
         this.time_text.set_position(0.7, 0.8, 0.001);
         this.time_text.set_extra_space(2.5);
+    }
+
+    update_time(time) {
+        this.race_time = time;
     }
 
     enable() {
@@ -166,7 +157,7 @@ export class TopBanner extends UI {
 
         this.time_text1.display(context, program_state);
 
-        this.time_text.text =formatTime(context.t)
+        this.time_text.text = formatTime(this.race_time)
         this.time_text.display(context, program_state);
 
 
@@ -185,7 +176,7 @@ export class UIAnimation extends UI {
     }
 
     start() {
-        this.start_time = this.time_now;
+        // this.start_time = this.time_now;
         this.started = true;
     }
 
@@ -206,37 +197,44 @@ export class UIAnimation extends UI {
 export class GameAnimation extends UIAnimation {
     constructor() {
         super();
-
-        this.text_p1 = new TextLine('Game!', "gentleman", color("#f82e4c"), color("#ffffff"));
-        this.text_p2 = new TextLine('Game!', "gentleman", color("#2f8ff9"), color("#ffffff"));
-        this.text_p3 = new TextLine('DRAW', 'gentleman', color("#808080"), color("#ffffff"));
-        this.text = this.text_p1;
+        this.text = new TextLine(' 3 ', 'gentleman', color(1, 0.7, 0.2, 1), color(1, 1, 1, 1));
     }
 
 
     display(context, program_state) {
         super.display(context, program_state);
+        console.log(this.time_now)
 
         if (!this.started) return;
 
         const dt = this.time_now - this.start_time;
+        // console.log("Race start display", dt)
 
-        const ease_func = (x) => 1.03 * (1 - Math.pow(2, -5 * x));
+        const ease_func = (x) => 1.5 * Math.pow(2, -5 * x) + 0.5;
 
-        const end_time = 1.5;
+        const end_time = 1;
 
         let scale;
-        if (dt < end_time) {
-            scale = 0.1 + 0.9 * ease_func(dt / end_time);
+        if (dt < 3 ) {
+            scale = 0.1 + 0.9 * ease_func((dt / end_time)%1.0);
         } else {
             scale = 1 + Math.sin((dt - end_time) * 3) * 0.02;
+        }
+
+        if (dt > 1) {
+            this.text.text = " 2 ";
+        }
+        if (dt > 2) {
+            this.text.text = " 1 ";
+        }
+        if (dt > 3) {
+            this.text.text = "Go!";
         }
 
         this.text.set_position(0, 0.25, 0.005 * scale);
         this.text.display(context, program_state);
     }
 }
-
 
 /**
  * Animate "Red/Blue's Turn" text in each turn
@@ -247,9 +245,9 @@ export class TurnAnimation extends UIAnimation {
 
         const font = "roboto-blackItalic";
 
-        this.text_p1 = new TextLine("Red's Turn", font, color("#ff556f"), color("#ffffff"));
+        this.text_p1 = new TextLine("Red's Turn", font, color(1, 0.3, 0.4, 1), color(1, 1, 1, 1));
         this.text_p1.set_extra_space(0.5);
-        this.text_p2 = new TextLine("Blue's Turn", font, color("#5aa6ff"), color("#ffffff"));
+        this.text_p2 = new TextLine("Blue's Turn", font, color(0.3, 0.6, 1, 1), color(1, 1, 1, 1));
         this.text_p2.set_extra_space(0.5);
 
         this.parallelogram = new defs.Parallelogram(0.01);
@@ -334,11 +332,11 @@ export class TurnAnimation extends UIAnimation {
         text.display(context, program_state);
 
         let tr = super.get_transform(upper_banners_pos, 0.18, 1.2, .06);
-        this.parallelogram.draw(context, program_state, tr, this.bg_material.override({color: UI.player === 0 ? color("#ff2000") : color("#0059ff")}));
+        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: UI.player === 0 ? color(1, 0.1, 0, 1) : color(0, 0.4, 1, 1)});
         tr = super.get_transform(lower_banners_pos, -0.18, 1.2, .06);
-        this.parallelogram.draw(context, program_state, tr, this.bg_material.override({color: UI.player === 0 ? color("#ff2000") : color("#0059ff")}));
+        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: UI.player === 0 ? color(1, 0.1, 0, 1) :  color(0, 0.4, 1, 1)});
         tr = super.get_transform(0, 0, 1.2, .12);
-        this.parallelogram.draw(context, program_state, tr, this.bg_material.override({color: color("#ffffff", alpha)}));
+        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: color(1, 1, 1, alpha)});
     }
 }
 
