@@ -1,82 +1,97 @@
-import {tiny, defs} from '../examples/common.js';
-                                                  // Pull these names into this module's scope for convenience:
-const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
+import {tiny} from '../examples/common.js';
 
-export class Scene2Texture extends Component
-  {                   // **Scene_To_Texture_Demo** is a crude way of doing multi-pass rendering.
-                      // We will draw a scene (containing just the left box with the striped
-                      // texture) to a hidden canvas.  The hidden canvas's colors are copied
-                      // to an HTML Image object, and then to one of our Textures.  Finally,
-                      // we clear the buffer in the middle of display() and start over.
-                      // The scene is drawn again (with a different texture) and a new box
-                      // on the right side, textured with the first scene.
-                      // NOTE: To use this for two-pass rendering, you simply need to write
-                      // any shader that acts upon the input texture as if it were a
-                      // previous rendering result.
-    init()
-      {               // Request the camera, shapes, and materials our Scene will need:
-        this.shapes = { 
-                        box:   new defs.Cube(),
-                        axis:  new defs.Axis_Arrows()
-                      }
-                                                // Scale the texture coordinates:
-        this.shapes.box.arrays.texture_coord.forEach( p => p.scale_by( 1 ) );
+const {
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
+} = tiny;
 
-        this.scratch_canvas = document.createElement('canvas');
-                                    // A hidden canvas for re-sizing the real canvas to be square:
-        this.scratch_canvas_context = this.scratch_canvas.getContext('2d');
-        this.scratch_canvas.width   = 256;
-        this.scratch_canvas.height  = 256;                // Initial image source: Blank gif file:
-        this.texture = new Texture( "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" );
 
-        const shader = new defs.Fake_Bump_Map( 1 );
-        this.materials =
-          {  a: { shader, ambient: .5, texture: new Texture( "../assets/thonk.jpg" ) },
-             b: { shader, ambient: .5, texture: new Texture( "../assets/galaxy.jpg" ) },
-             c: { shader, ambient:  1, texture: this.texture }
-          }
+/**
+ * Scene2Texture is a static class that handles converting scene drawing to textures.
+ */
+export class Scene2Texture {
+    static scene_drawers = [];
 
-        this.spin = 0;
-        this.cube_1 = Mat4.translation( -1.5,0,0 );
-        this.game_cube = Mat4.translation( 0,0,0 );
-      }
-    render_controls()
-      { this.key_triggered_button( "Cube rotation",  [ "c" ], () => this.spin ^= 1 );
+    /**
+     * Register a scene drawer to be drawn.
+     * @param scene_drawer -- The scene drawer object.
+     */
+    static register(scene_drawer) {
+        Scene2Texture.scene_drawers.push(scene_drawer);
+    }
 
-        this.live_string( box => { box.textContent = this.spin } );  this.new_line();
+    /**
+     * This function should be called per frame before any other drawings.
+     * It will draw all registered scene drawers and clean up the GPU buffer afterwards.
+     * The drew scene will be updated to scene drawer's texture.
+     */
+    static draw(context, program_state) {
+        // Skip first frame
+        if (!this.skip) {
+            this.skip = true;
+            return;
+        }
 
-        this.result_img = this.control_panel.appendChild( Object.assign( document.createElement( "img" ),
-                { style:"width:300px; height:" + 300 * this.aspect_ratio + "px" } ) );
-      }
-    render_animation( caller )
-      {                                 // render_animation():  Draw both scenes, clearing the buffer in between.
-        this.uniforms.lights = [ defs.Phong_Shader.light_source( vec4( -5,5,5,1 ), color( 0,1,1,1 ), 100000 ) ];
-        const t = this.uniforms.animation_time / 1000, dt = this.uniforms.animation_delta_time / 1000;
+        const aspect_ratio = context.width / context.height;
+        const width_backup = context.width;
+        const height_backup = context.height;
 
-        Shader.assign_camera( Mat4.look_at( vec3( 0,0,5 ), vec3( 0,0,0 ), vec3( 0,1,0 ) ), this.uniforms );
-        this.uniforms.projection_transform = Mat4.perspective( Math.PI/4, caller.width/caller.height, .5, 500 );
+        // Backup camera matrix, projection matrix, and light
+        const cam_matrix_backup = program_state.camera_inverse;
+        const proj_matrix_backup = program_state.projection_transform;
+        const light_backup = program_state.lights;
 
-            // Update persistent matrix state:
-        this.cube_1.post_multiply( Mat4.rotation( this.spin * dt * 30 / 60 * 2*Math.PI,   1,0,0 ) );
-                                          // Perform two rendering passes.  The first one we erase and
-                                          // don't display after using to it generate our texture.
-            // Draw Scene 1:
-        this.shapes.box.draw( caller, this.uniforms, this.cube_1, this.materials.b );
+        for (let scene_drawer of Scene2Texture.scene_drawers) {
+            // Set the aspect ratio temporarily
+            context.width = scene_drawer.width;
+            context.height = scene_drawer.height;
 
-        this.scratch_canvas_context.drawImage( caller.canvas, 0, 0, 256, 256 );
-        this.texture.image.src = this.result_img.src = this.scratch_canvas.toDataURL("image/png");
+            // Draw the scene
+            scene_drawer.display_fn(context, program_state);
 
-                                    // Don't call copy to GPU until the event loop has had a chance
-                                    // to act on our SRC setting once:
-        if( this.skipped_first_frame )
-                                                     // Update the texture with the current scene:
-            this.texture.copy_onto_graphics_card( caller.context, false );
-        this.skipped_first_frame = true;
+            // Restore the aspect ratio
+            context.width = width_backup;
+            context.height = height_backup;
 
-                                    // Start over on a new drawing, never displaying the prior one:
-        caller.context.clear( caller.context.COLOR_BUFFER_BIT | caller.context.DEPTH_BUFFER_BIT);
+            // Generate image
+            // scene_drawer.scratchpad_context.drawImage(context.canvas, 0, 0, scene_drawer.width, scene_drawer.height / aspect_ratio);
+            scene_drawer.scratchpad_context.drawImage(context.canvas, 0, 0, scene_drawer.width, scene_drawer.height);
+            scene_drawer.texture.image.src = scene_drawer.scratchpad.toDataURL("image/png");
 
-            // Draw Scene 2:
-        this.shapes.box.draw( caller, this.uniforms, this.game_cube, this.materials.c );
-      }
-  }
+            // Copy onto GPU
+            if (scene_drawer.skip_first) {
+                scene_drawer.texture.copy_onto_graphics_card(context.context, false);
+            }
+            scene_drawer.skip_first = true;
+
+            // Cleanup
+            context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
+            program_state.camera_inverse = cam_matrix_backup;
+            program_state.projection_transform = proj_matrix_backup;
+            // program_state.lights = light_backup;
+        }
+    }
+}
+
+/**
+ * SceneDrawer handles drawing a scene to a texture.
+ */
+export class SceneDrawer {
+    /**
+     * @param width         Width of the scene
+     * @param height        Height of the scene
+     * @param display_fn    Function to display the scene
+     */
+    constructor(width, height, display_fn) {
+        this.width = width;
+        this.height = height;
+        this.display_fn = display_fn;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        this.scratchpad = canvas;
+        this.scratchpad_context = canvas.getContext("2d");
+        this.texture = new Texture("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+    }
+}

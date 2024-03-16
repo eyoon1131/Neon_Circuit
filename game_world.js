@@ -5,6 +5,9 @@ import {Simulation} from './new_scripts/simulation.js';
 import {Curve_Shape} from './new_scripts/shapes.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
+import {GameAnimation, TopBanner, TurnAnimation, UI} from "./ui/ui.js";
+import {Scene2Texture} from "./ui/scene2texture.js";
+
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
@@ -136,13 +139,18 @@ export
                 car2.max_speed = 25;
 
                 this.shapes.curve = new Curve([enemyPathFunction, 0, 0], 1000);
+
+                // ui
+                this.game_animation = new GameAnimation();
+                this.turn_animation = new TurnAnimation();
+                this.ui = [new TopBanner(), this.game_animation, this.turn_animation];
             }
 
-            render_animation(caller) {                                                // display():  Called once per frame of animation.  We'll isolate out
+            render_animation(caller) {                                                
+                // display():  Called once per frame of animation.  We'll isolate out
                 // the code that actually draws things into Part_one_hermite, a
                 // subclass of this Scene.  Here, the base class's display only does
                 // some initial setup.
-
                 // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
                 if (!caller.controls) {
                     this.animated_children.push(caller.controls = new defs.Movement_Controls({ uniforms: this.uniforms }));
@@ -221,6 +229,9 @@ export class game_world extends game_world_base {                               
         let t_step = t;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
+        /**** UI *****/
+        // console.log(caller)
+        Scene2Texture.draw(caller, this.uniforms);
 
         const car = this.simulation.particles[0];
         const at = car.pos;
@@ -295,6 +306,12 @@ export class game_world extends game_world_base {                               
         this.shapes.box.draw(caller, this.uniforms, car_collision_transform, { ...this.materials.metal, color: color(1, 0, 0, 1) });
 
         this.shapes.curve.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) })
+
+        // ui
+        UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
+        for (const i in this.ui) {
+            this.ui[i].display(caller, this.uniforms);
+        }
 
     }
 
