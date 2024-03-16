@@ -29,6 +29,7 @@ import {Transforms_Sandbox_Base, Transforms_Sandbox}
     from "./examples/transforms-sandbox.js";
 
 import {game_world} from "./game_world.js";
+import { Scene2Texture } from './ui/scene2texture.js';
 
 Object.assign (defs,
     {Minimal_Webgl_Demo},
@@ -41,7 +42,8 @@ Object.assign (defs,
     {Scene_To_Texture_Demo},
     {Text_Demo},
     {Transforms_Sandbox_Base, Transforms_Sandbox},
-    {game_world}
+    {game_world},
+    {Scene2Texture}
 );
 
 // ******************** SELECT THE DEMO TO DISPLAY:
