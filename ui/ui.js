@@ -109,11 +109,6 @@ export class TopBanner extends UI {
     constructor() {
         super();
 
-        // const background_color = color("#f6f7dc", 0.65);
-        // const background_fade_color = color("#2e4354", 0.7);
-        // const text_color = color("#ffffff");
-        // const text_border_color = color("#2e4354", 1);
-
         const background_color = color(0.15, 0.22, 0.28, 0.8);
         const background_fade_color = color(0.27, 0.27, 0.3, 0.6);
         const text_color = color(1, 1, 1, 1);
@@ -130,13 +125,6 @@ export class TopBanner extends UI {
                 diffusivity: 0,
                 specularity: 0,
                 color: background_color,
-            },
-            background: {
-                shader: new defs.Phong_Shader(), 
-                ambient: 1,
-                diffusivity: 0,
-                specularity: 0,
-                color: background_color,
             }
         };
 
@@ -146,16 +134,16 @@ export class TopBanner extends UI {
 
         this._enabled = true;
 
-        this.laps_completed = new TextLine('Laps Completed', "roboto-regular", text_color, text_border_color)
+        this.laps_completed = new TextLine('Laps Completed', "nasalization", text_color, text_border_color)
         this.laps_completed.set_position(-0.6, 0.8, 0.001);
         this.laps_completed.set_extra_space(2.5);
 
 
         this.race_time = 0;
-        this.time_text1 = new TextLine('Time', "roboto-regular", text_color, text_border_color)
+        this.time_text1 = new TextLine('Time', "nasalization", text_color, text_border_color)
         this.time_text1.set_position(0.5, 0.8, 0.001);
         this.time_text1.set_extra_space(2.5);
-        this.time_text = new TextLine('0', "roboto-regular", text_color, text_border_color)
+        this.time_text = new TextLine('0', "nasalization", text_color, text_border_color)
         this.time_text.set_position(0.7, 0.8, 0.001);
         this.time_text.set_extra_space(2.5);
     }
@@ -279,8 +267,8 @@ export class Leaderboard extends UI {
     constructor(num_entries = 4) {
         super();
 
-        const background_color = color(0.15, 0.22, 0.28, 0.8);
-        const background_fade_color = color(0.27, 0.27, 0.3, 0.6);
+        const background_color = color(0.1, 0.4, 0.2, 0.5);
+        const background_fade_color = color(0.2, 0.2, 0.4, 0.3);
         const text_color = color(1, 1, 1, 1);
         const text_border_color = color(0.15, 0.29, 0.35, 1);
 
@@ -295,13 +283,6 @@ export class Leaderboard extends UI {
                 diffusivity: 0,
                 specularity: 0,
                 color: background_color,
-            },
-            background: {
-                shader: new defs.Phong_Shader(), 
-                ambient: 1,
-                diffusivity: 0,
-                specularity: 0,
-                color: background_color,
             }
         };
 
@@ -312,7 +293,7 @@ export class Leaderboard extends UI {
         this.num_entries = num_entries;
         this.leaderboard_stats = [];
         for (let i = 0; i < num_entries; i++) {
-            this.leaderboard_stats.push(new TextLine(' '.repeat(12), "roboto-regular", text_color, text_border_color));
+            this.leaderboard_stats.push(new TextLine(' '.repeat(12), "gentleman", text_color, text_border_color));
             this.leaderboard_stats[i].set_extra_space(2.5);
         }
 
@@ -343,9 +324,9 @@ export class Leaderboard extends UI {
         if (!this._enabled) return;
 
         // // Draw background.
-        // const bg_transform = super.get_transform(0, 0.9, 1, 0.3);
-        // bg_transform.post_multiply(Mat4.translation(0, 0, 0.01));
-        // this.shapes.square.draw(caller, uniforms, bg_transform, this.materials.background_fade);
+        const bg_transform = super.get_transform(LEADERBOARD_HOFFSET, LEADERBOARD_VOFFSET-0.4625, 0.225, 0.5);
+        bg_transform.post_multiply(Mat4.translation(0, 0, 0.01));
+        this.shapes.square.draw(caller, uniforms, bg_transform, this.materials.background_fade);
         const aspect_ratio = caller.width / caller.height;
         const entry_height = LEADERBOARD_ENTRY_SCALE * aspect_ratio * 0.2
         // Draw text.
