@@ -340,7 +340,7 @@ export class game_world extends game_world_base {                               
             
         //     this.texture_generated ++;
         // }
-        if (t_step < 2.5)
+        if (t_step < 1)
             Scene2Texture.draw(caller, this.uniforms);
         if (!this.start_animation.started) {
             this.start_animation.start()
