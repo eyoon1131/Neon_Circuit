@@ -84,7 +84,7 @@ export
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
-                this.simulation.lap_goal = 5;
+                this.simulation.lap_goal = 3;
                 // collision handling
                 this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH - TRACK_WALL_WIDTH / 2, 2 * car.scale_factors[0]));
 
@@ -282,9 +282,15 @@ export class game_world extends game_world_base {                               
         }
         
         if (this.simulation.particles[0].laps > this.laps_completed){
+            const cur_lap = this.simulation.particles[0].laps;
             console.log("lap completed")
+            if (cur_lap === this.simulation.lap_goal)
+                this.lap_animation.final_lap(this.simulation.leaderboard);
+            else 
+                this.lap_animation.update( cur_lap, this.simulation.lap_goal )
+
             this.lap_animation.start();
-            this.laps_completed = this.simulation.particles[0].laps;
+            this.laps_completed = cur_lap;
         }
 
         if (this.simulation.lap_goal === this.laps_completed){

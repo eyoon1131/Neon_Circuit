@@ -360,6 +360,32 @@ export class LapAnimation extends UIAnimation {
         this.ended = false;
     }
 
+    final_lap(leaderboard_stats) {
+        let i = 0;
+        for (const entry of leaderboard_stats) {
+            if (entry[0] === 1) {
+                switch(i) {
+                    case 0:
+                        this.text.text = "1st Place!";
+                        break;
+                    case 1:
+                        this.text.text = "2nd Place!";
+                        break;
+                    case 2:
+                        this.text.text = "3rd Place!";
+                        break;
+                    default:
+                        this.text.text = `${i+1}th Place!`;
+                }
+            }
+            i++;
+        }
+    }
+
+    update(lap_number, goal_laps) {
+        this.text.text = `Lap ${lap_number}/ ${goal_laps} !`;
+    }
+
     draw(caller, uniforms) {
         super.draw(caller, uniforms);
         if (!this.started) return;
