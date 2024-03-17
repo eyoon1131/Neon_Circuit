@@ -397,13 +397,13 @@ export class StartAnimation extends UIAnimation {
         const dt = this.time_now - this.start_time;
         // console.log("Race start draw", dt)
 
-        const ease_func = (x) => 1.5 * Math.pow(2, -5 * x) + 0.5;
+        const ease_func = (x) => Math.pow(2, -5 * x);
 
         const end_time = 1;
 
         let scale;
         if (dt < 3 ) {
-            scale = 0.1 + 0.9 * ease_func((dt / end_time)%1.0);
+            scale = 0.5 + 1.5 * ease_func((dt / end_time)%1.0);
         } else {
             scale = 1 + Math.sin((dt - end_time) * 3) * 0.02;
         }
