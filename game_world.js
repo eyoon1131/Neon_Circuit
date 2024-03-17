@@ -386,7 +386,7 @@ export class game_world extends game_world_base {                               
         while (t_step < t_next) {
             // handle track collision
 
-            this.simulation.update(this.simulation.timestep);
+            this.simulation.update(this.simulation.timestep, t_step - 3);
             //this.simulation.particles[0].pos = this.spline.get_position(Math.sin(t / 4) ** 2);
             //console.log(Math.sin(t / 50) ** 2);
             t_step += this.simulation.timestep;

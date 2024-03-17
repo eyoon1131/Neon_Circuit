@@ -26,10 +26,10 @@ export class Simulation {
         this.leaderboard = [];
     }
 
-    update(dt) {
-        this.elapsed_time += this.timestep;
+    update(dt, elapsed_time) {
+        this.elapsed_time = elapsed_time;
         //console.log(this.elapsed_time);
-        if (this.elapsed_time < 3)
+        if (this.elapsed_time < 0)
             return;
         for (const p of this.particles) {
             if (!p.valid)
