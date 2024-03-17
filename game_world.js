@@ -77,7 +77,7 @@ export
                 const tex_phong = new defs.Textured_Phong(TRACK_LIGHT_NUM);
                 const trackPhong = new TrackPhong(TRACK_LIGHT_NUM);
                 this.materials = {};
-                this.materials.track = {shader: trackPhong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1)}
+                this.materials.track = { shader: trackPhong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1) }
                 this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1) }
                 this.materials.metal = { shader: phong, ambient: .2, diffusivity: 1, specularity: 1, color: color(.9, .5, .9, 1) }
                 this.materials.rgb = { shader: tex_phong, ambient: .5, texture: new Texture("assets/rgb.jpg") }
@@ -124,8 +124,8 @@ export
                     TRACK_HEIGHT,
                     hermiteFunction,
                     TRACK_DIVISIONS,
-                    color(0.2,0.2,0.2,1),
-                    color(1,0,0,1)
+                    color(0.2, 0.2, 0.2, 1),
+                    color(1, 0, 0, 1)
                 );
                 this.simulation.finish_line = hermiteCurvePoints[0];
                 this.simulation.finish_line_slope = hermiteCurvePoints[0][0] / hermiteCurvePoints[0][2];
@@ -197,6 +197,13 @@ export
                     this.shapes.curves.push(new Curve([enemyPathFunction, 0, 0], 1000));
                 }
 
+                const at = car.pos;
+                const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+                Shader.assign_camera(Mat4.look_at(
+                    at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+                    this.cameraPosition = eye_to_at;
+
+
                 for (let i = 0; i < NUM_ITEMS; i++) {
                     let rand_t = Math.random() * 0.75 + 0.15;
                     const random_pos = hermiteFunction(rand_t).plus(
@@ -261,7 +268,7 @@ export
 
                 // ];
 
-                
+
 
                 // draw axis arrows.
                 // this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
@@ -319,19 +326,19 @@ export class game_world extends game_world_base {                               
             this.start_animation.end()
         }
 
-        if (this.simulation.particles[0].laps > this.laps_completed){
+        if (this.simulation.particles[0].laps > this.laps_completed) {
             const cur_lap = this.simulation.particles[0].laps;
             console.log("lap completed")
             if (cur_lap === this.simulation.lap_goal)
                 this.lap_animation.final_lap(this.simulation.leaderboard);
             else
-                this.lap_animation.update( cur_lap, this.simulation.lap_goal )
+                this.lap_animation.update(cur_lap, this.simulation.lap_goal)
 
             this.lap_animation.start();
             this.laps_completed = cur_lap;
         }
 
-        if (this.simulation.lap_goal === this.laps_completed){
+        if (this.simulation.lap_goal === this.laps_completed) {
             console.log("Game end!", this.simulation.leaderboard);
             this.leaderboard.update(this.simulation.leaderboard);
         }
@@ -345,10 +352,13 @@ export class game_world extends game_world_base {                               
         const car = this.simulation.particles[0];
         const at = car.pos;
         const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+        const DAMPING_RATIO = 0.9;
+        let targetPosition = this.cameraPosition.times(DAMPING_RATIO).plus(eye_to_at.times(1-DAMPING_RATIO));
         if (!this.free_camera) {
             Shader.assign_camera(Mat4.look_at(
-                at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+                at.minus(targetPosition), at, vec3(0, 1, 0)), this.uniforms);
         }
+        this.cameraPosition = targetPosition;
         // !!! Draw ground
         let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
         this.shapes.box.draw(caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow });
@@ -412,10 +422,10 @@ export class game_world extends game_world_base {                               
         //     this.shapes.axis.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: color(0, 1, 0, 1) });
         // }
         // FIAX LUX!
-         
+
         this.uniforms.lights = [];
-        for(let i = 0; i < TRACK_LIGHT_NUM; i++) {
-            let [p,[forward, up, tan]] = getFrameFromT(parseFloat(i)/TRACK_LIGHT_NUM, this.curve_fn);
+        for (let i = 0; i < TRACK_LIGHT_NUM; i++) {
+            let [p, [forward, up, tan]] = getFrameFromT(parseFloat(i) / TRACK_LIGHT_NUM, this.curve_fn);
             p[1] += 10;
             //p.add_by(tan.normalized().times(TRACK_WIDTH/2));
             // let model_transform = Mat4.scale(0.1, 0.1, 0.1);
