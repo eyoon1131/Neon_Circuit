@@ -14,6 +14,11 @@ function _curveDerivative(curveFunction, t) {
         .times(TINY_STEP);
 }
 
+function pHash(position) {
+    return `${position[0]}${position[1]}${position[2]}`
+}
+const MEMORY = {};
+
 export function getTimeOnCurve(position, curveFunction) {
 
     // simple scan-point approach
@@ -34,12 +39,14 @@ export function getTimeOnCurve(position, curveFunction) {
 
 // returns frame [tangent, normal, horizontal]
 export function getFrame(position, curveFunction) {
+    // in reality we only have one curve function so
+    if(pHash(position) in MEMORY) return MEMORY[pHash(position)];
     let t = getTimeOnCurve(position, curveFunction);
     let point = curveFunction(t);
     const tangent = _curveDerivative(curveFunction, t).normalized();
     const horizontal = tangent.cross(vec3(0, 1, 0)).normalized();
     const normal = horizontal.cross(tangent).normalized();
-    return [tangent, normal, horizontal, point];
+    return MEMORY[pHash(position)]=[tangent, normal, horizontal, point];
 }
 
 export function getFrameFromT(t, curveFunction) {

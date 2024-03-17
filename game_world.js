@@ -70,7 +70,8 @@ export
                         3: new CarShape('RED.png'),
                         4: new CarShape('PUR.png'),
                     },
-                    'coin': new CoinShape(),
+                    'coin': new CoinShape('/assets/coin.png'),
+                    'redCoin': new CoinShape('/assets/redcoin.png'),
                 };
 
                 // *** Materials: ***  A "material" used on individual shapes specifies all fields
@@ -418,8 +419,15 @@ export class game_world extends game_world_base {                               
             //this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
             if (p.is_car)
                 this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
-            else
-                this.shapes.coin.draw(caller, this.uniforms, model_transform, { ...this.materials.metal, color: p.color });
+            else {
+                
+                if(p.effect ===1) {
+                    this.shapes.coin.draw(caller, this.uniforms, model_transform, { ...this.materials.metal, color: p.color });
+                } else {
+                    this.shapes.redCoin.draw(caller, this.uniforms, model_transform, { ...this.materials.metal, color: p.color });
+                }
+            }
+                
         }
 
         // render the track with some debug info
