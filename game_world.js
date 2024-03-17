@@ -1,6 +1,6 @@
 import { defs, tiny } from './examples/common.js';
 import { Curve, HermiteFactory, Track, TrackPhong } from './track/track-generate.js';
-import { Car, User, Item, Enemy } from './new_scripts/particle.js';
+import { Car, User, Item, Enemy, Particle } from './new_scripts/particle.js';
 import { Simulation } from './new_scripts/simulation.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
@@ -8,6 +8,7 @@ import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard } from "./ui/u
 import { Scene2Texture } from "./ui/scene2texture.js";
 import { CarShape } from './car/car.js';
 import { getFrameFromT } from './track/track-generate.js';
+import {Spring} from "./new_scripts/spring.js";
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
@@ -130,7 +131,10 @@ export
                 this.simulation.finish_line = hermiteCurvePoints[0];
                 this.simulation.finish_line_slope = hermiteCurvePoints[0][0] / hermiteCurvePoints[0][2];
 
-                const blue = color(0, 0, 1, 1), yellow = color(0.7, 1, 0, 1), red = color(1, 0, 0, 1), purple = color(0.5, 0, 0.5, 1);
+                const blue = color(0, 0, 1, 1),
+                    yellow = color(0.7, 1, 0, 1),
+                    red = color(1, 0, 0, 1),
+                    purple = color(0.5, 0, 0.5, 1);
                 const colors = [blue, yellow, red, purple];
 
                 // car setup
@@ -222,6 +226,15 @@ export
                         item.color = red;
                         item.effect = 2; // slow
                     }
+                    item.spring_anchor = new Particle();
+                    item.spring_anchor.pos = item.pos.plus(vec3(0, 0.15, 0));
+                    item.spring = new Spring();
+                    item.spring.particle1 = item;
+                    item.spring.particle2 = item.spring_anchor;
+                    item.spring.ks = 50;
+                    item.spring.kd = 0;
+                    item.spring.rest_length = 0;
+                    item.spring.valid = true;
                     this.simulation.particles.push(item);
                 }
             }
@@ -400,7 +413,7 @@ export class game_world extends game_world_base {                               
             if (p.is_car)
                 this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
             else
-                this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
+                this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.metal, color: p.color });
         }
 
         // render the track with some debug info

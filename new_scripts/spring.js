@@ -18,7 +18,7 @@ export class Spring {
             throw "Not initialized"
         const d_ij_vec = this.particle2.pos.minus(this.particle1.pos);
         const d_ij = d_ij_vec.norm();
-        const d_ij_unit = d_ij_vec.times(1.0 / d_ij);
+        const d_ij_unit = d_ij_vec.normalized();
         const v_ij_vec = this.particle2.vel.minus(this.particle1.vel);
         const fs_ij = d_ij_unit.times(this.ks * (d_ij - this.rest_length));
         const fd_ij = d_ij_unit.times(this.kd * v_ij_vec.dot(d_ij_unit));
