@@ -464,9 +464,9 @@ export class game_world extends game_world_base {                               
 
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
-        console.log(this.uniforms.camera_inverse);
+        // console.log(this.uniforms.camera_inverse);
         for (const i in this.ui) {
-            console.log(this.ui[i])
+            // console.log(this.ui[i])
             this.ui[i].draw(caller, this.uniforms);
         }
         // end ui

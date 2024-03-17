@@ -472,7 +472,7 @@ export class LapAnimation extends UIAnimation {
         if (!this.started) return;
 
         const t = this.time_now - this.start_time;
-        console.log("Lap draw", t)
+        // console.log("Lap draw", t)
 
         // Helper functions
         const prefix_sum = (arr, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0);
