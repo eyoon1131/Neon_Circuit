@@ -1,6 +1,6 @@
 import { defs, tiny } from './examples/common.js';
 import { Curve, HermiteFactory, Track, TrackPhong } from './track/track-generate.js';
-import { Car, Enemy } from './new_scripts/particle.js';
+import { Car, User, Item, Enemy } from './new_scripts/particle.js';
 import { Simulation } from './new_scripts/simulation.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
