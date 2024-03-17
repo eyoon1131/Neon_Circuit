@@ -6,7 +6,7 @@ const {
 
 
 /**
- * Scene2Texture is a static class that handles converting scene drawing to textures.
+ * adopted from scene-to-texture-demo.js
  */
 export class Scene2Texture {
     static scene_drawers = [];
@@ -53,9 +53,9 @@ export class Scene2Texture {
             caller.height = height_backup;
 
             // Generate image
-            // scene_drawer.scratchpad_caller.drawImage(caller.canvas, 0, 0, scene_drawer.width, scene_drawer.height / aspect_ratio);
-            scene_drawer.scratchpad_caller.drawImage(caller.canvas, 0, 0, scene_drawer.width, scene_drawer.height);
-            scene_drawer.texture.image.src = scene_drawer.scratchpad.toDataURL("image/png");
+            // scene_drawer.scratch_canvas_context.drawImage(caller.canvas, 0, 0, scene_drawer.width, scene_drawer.height / aspect_ratio);
+            scene_drawer.scratch_canvas_context.drawImage(caller.canvas, 0, 0, scene_drawer.width, scene_drawer.height);
+            scene_drawer.texture.image.src = scene_drawer.scratch_canvas.toDataURL("image/png");
 
             // Copy onto GPU
             if (scene_drawer.skip_first) {
@@ -67,7 +67,6 @@ export class Scene2Texture {
             caller.context.clear(caller.context.COLOR_BUFFER_BIT | caller.context.DEPTH_BUFFER_BIT);
             uniforms.camera_inverse = cam_matrix_backup;
             uniforms.projection_transform = proj_matrix_backup;
-            // uniforms.lights = light_backup;
         }
     }
 }
@@ -90,8 +89,8 @@ export class SceneDrawer {
         canvas.width = width;
         canvas.height = height;
 
-        this.scratchpad = canvas;
-        this.scratchpad_caller = canvas.getcaller("2d");
+        this.scratch_canvas = canvas;
+        this.scratch_canvas_context = this.scratch_canvas.getContext('2d');
         this.texture = new Texture("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
     }
 }

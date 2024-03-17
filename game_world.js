@@ -1,13 +1,14 @@
 import { defs, tiny } from './examples/common.js';
 import { Curve, HermiteFactory, Track, TrackPhong } from './track/track-generate.js';
-import { Car, User, Item, Enemy } from './new_scripts/particle.js';
+import { Car, User, Item, Enemy, Particle } from './new_scripts/particle.js';
 import { Simulation } from './new_scripts/simulation.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
-import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard } from "./ui/ui.js";
+import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard, CarAvatar} from "./ui/ui.js";
 import { Scene2Texture } from "./ui/scene2texture.js";
 import { CarShape } from './models/car.js';
 import { getFrameFromT } from './track/track-generate.js';
+import {Spring} from "./new_scripts/spring.js";
 import { TexturedModel } from './models/textured-model.js';
 import { CoinShape } from './models/coin.js';
 // Pull these names into this module's scope for convenience:
@@ -93,7 +94,7 @@ export
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
-                this.simulation.lap_goal = 3;
+                this.simulation.lap_goal = 5;
                 // collision handling
                 this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH - TRACK_WALL_WIDTH / 2, 2 * car.scale_factors[0]));
 
@@ -133,7 +134,10 @@ export
                 this.simulation.finish_line = hermiteCurvePoints[0];
                 this.simulation.finish_line_slope = hermiteCurvePoints[0][0] / hermiteCurvePoints[0][2];
 
-                const blue = color(0, 0, 1, 1), yellow = color(0.7, 1, 0, 1), red = color(1, 0, 0, 1), purple = color(0.5, 0, 0.5, 1);
+                const blue = color(0, 0, 1, 1),
+                    yellow = color(0.7, 1, 0, 1),
+                    red = color(1, 0, 0, 1),
+                    purple = color(0.5, 0, 0.5, 1);
                 const colors = [blue, yellow, red, purple];
 
                 // car setup
@@ -160,7 +164,8 @@ export
                 this.lap_animation = new LapAnimation();
                 this.top_banner = new TopBanner();
                 this.leaderboard = new Leaderboard();
-                this.ui = [this.top_banner, this.start_animation, this.lap_animation, this.leaderboard];
+                this.car_avatar = new CarAvatar(this.shapes.cars);
+                this.ui = [ this.top_banner, this.start_animation, this.lap_animation, this.leaderboard, this.car_avatar ];
                 for (let i = 1; i < NUM_CARS; i++) {
                     const enemyPathPoints = [
                         //hermiteCurvePoints[0].plus(vec3((i - 1) * 0.3 * TRACK_WIDTH , 0, (i - 1) * 0.3 * TRACK_WIDTH)),
@@ -225,6 +230,15 @@ export
                         item.color = red;
                         item.effect = 2; // slow
                     }
+                    item.spring_anchor = new Particle();
+                    item.spring_anchor.pos = item.pos.plus(vec3(0, 0.15, 0));
+                    item.spring = new Spring();
+                    item.spring.particle1 = item;
+                    item.spring.particle2 = item.spring_anchor;
+                    item.spring.ks = 50;
+                    item.spring.kd = 0;
+                    item.spring.rest_length = 0;
+                    item.spring.valid = true;
                     this.simulation.particles.push(item);
                 }
             }
@@ -344,6 +358,8 @@ export class game_world extends game_world_base {                               
         if (this.simulation.lap_goal === this.laps_completed) {
             console.log("Game end!", this.simulation.leaderboard);
             this.leaderboard.update(this.simulation.leaderboard);
+            this.car_avatar.update_positions(this.simulation.leaderboard);
+            this.car_avatar.enable();
         }
 
         if (t_step > 3) {
@@ -403,7 +419,7 @@ export class game_world extends game_world_base {                               
             if (p.is_car)
                 this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
             else
-                this.shapes.coin.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
+                this.shapes.coin.draw(caller, this.uniforms, model_transform, { ...this.materials.metal, color: p.color });
         }
 
         // render the track with some debug info
@@ -440,6 +456,7 @@ export class game_world extends game_world_base {                               
 
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
+        console.log(this.uniforms.camera_inverse);
         for (const i in this.ui) {
             console.log(this.ui[i])
             this.ui[i].draw(caller, this.uniforms);

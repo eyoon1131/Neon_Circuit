@@ -9,7 +9,9 @@ const SAFE_EDGE = 0.1;
 export function are_colliding(p1, p2) {
     if (p1 === p2)
         return false;
-    const dist = p1.pos.minus(p2.pos).norm();
+    const p1_zx = vec3(p1.pos[0], 0, p1.pos[2]);
+    const p2_zx = vec3(p2.pos[0], 0, p2.pos[2]);
+    const dist = p1_zx.minus(p2_zx).norm();
     return dist <= p1.scale_factors[0] + p2.scale_factors[0] + SAFE_EDGE;
 }
 
@@ -37,6 +39,7 @@ export class Particle {
     }
 
     handle_inputs(sim) {
+        this.ext_force = vec3(0, 0, 0);
     }
 
     handle_collision(sim) {
@@ -128,7 +131,6 @@ export class Car extends Particle {
 
     handle_inputs(sim) {
         super.handle_inputs(sim);
-        this.ext_force = vec3(0, 0, 0);
         const vel_unit = this.vel.normalized();
 
         const norm_force = sim.g_acc.times(-this.mass);
@@ -222,8 +224,12 @@ export class Item extends Particle {
     constructor() {
         super();
         this.effect = 0;
+        this.spring_anchor = null;
+        this.spring = null;
     }
 
     handle_inputs(sim) {
+        super.handle_inputs(sim);
+        this.spring.update();
     }
 }
