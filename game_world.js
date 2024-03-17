@@ -6,8 +6,10 @@ import { detectTrackCollision, trackCollisionDebug } from './collision/collision
 
 import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard } from "./ui/ui.js";
 import { Scene2Texture } from "./ui/scene2texture.js";
-import { CarShape } from './car/car.js';
+import { CarShape } from './models/car.js';
 import { getFrameFromT } from './track/track-generate.js';
+import { TexturedModel } from './models/textured-model.js';
+import { CoinShape } from './models/coin.js';
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
@@ -66,7 +68,8 @@ export
                         2: new CarShape('YLO.png'),
                         3: new CarShape('RED.png'),
                         4: new CarShape('PUR.png'),
-                    }
+                    },
+                    'coin': new CoinShape(),
                 };
 
                 // *** Materials: ***  A "material" used on individual shapes specifies all fields
@@ -314,7 +317,7 @@ export class game_world extends game_world_base {                               
         const blue = color(0, 0, 1, 1), yellow = color(0.7, 1, 0, 1), red = color(1, 0, 0, 1), purple = color(0.5, 0, 0.5, 1);
 
         let t_step = this.t = this.uniforms.animation_time / 1000;
-        let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
+        let dt = this.dt = Math.min(1 / 60, this.uniforms.animation_delta_time / 1000);
 
         /**** UI setup *****/
         Scene2Texture.draw(caller, this.uniforms);
@@ -400,7 +403,7 @@ export class game_world extends game_world_base {                               
             if (p.is_car)
                 this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
             else
-                this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
+                this.shapes.coin.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
         }
 
         // render the track with some debug info

@@ -13,22 +13,25 @@ const {
     Component } = tiny;
 
 /* Adopted from ../examples/obj-file-demo.js; credits to original author */
-/* Slight modifications are mare */
-export class CarShape extends Shape {
-    constructor(textureName) {
+/* The reason for doing this is to avoid referencing the /examples directory and
+provide extra convenience */
+export class TexturedModel extends Shape {
+    constructor(modelPath, texturePath, materialOverrides = {
+        color: color(0.1,0.1,0.1, 1),
+        ambient: .34, diffusivity: 0.1, specularity: 1
+    }) {
         super("position", "normal", "texture_coord");
-        this.phase = Math.random();
         // Begin downloading the mesh. Once that completes, return
         // control to our parse_into_mesh function.
-        this.load_file('/assets/car/car.obj');
+        this.load_file(modelPath);
         this.material = {
-            shader: new defs.Textured_Phong(1), color: color(.5, .5, .5, 1),
-            ambient: .3, diffusivity: 0.1, specularity: 1,
-            texture: new Texture(`/assets/car/${textureName}`)
+            shader: new defs.Textured_Phong(1),
+            ...materialOverrides,
+            texture: new Texture(texturePath)
         };
     }
 
-    load_file(filename) {                             // Request the external file and wait for it to load.
+    load_file(filename) {  // Request the external file and wait for it to load.
         return fetch(filename)
             .then(response => {
                 if (response.ok) return Promise.resolve(response.text())
@@ -102,14 +105,7 @@ export class CarShape extends Shape {
 
     draw(caller, uniforms, model_transform) {               // draw(): Same as always for shapes, but cancel all
         // attempts to draw the shape before it loads:
-        
         if (!this.ready) return;
-        let t = uniforms.animation_time/1000.0;
-        model_transform.pre_multiply(Mat4.translation(0,0.33 + 
-            Math.sin((2+this.phase/2)*Math.PI*t + this.phase)/48 // realistic hover
-            ,0));
-       // model_transform = model_transform.times(Mat4.scale(1.3,1.3,1.3));
         super.draw(caller, uniforms, model_transform, this.material);
     }
-
 }
