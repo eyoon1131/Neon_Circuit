@@ -298,15 +298,25 @@ export class game_world extends game_world_base {                               
             const pos = p.pos;
             const scale = p.scale_factors;
             let model_transform = Mat4.scale(scale[0], scale[1], scale[2]);
-            let theta = p.get_rotation();
-            model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
+            // let theta = p.get_rotation();
+            // model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
+            let y = vec3(0, 1, 0), x = p.vel.norm() > 0.1 ? p.vel.normalized():vec3(-1,0,1).normalized(), z = x.cross(y).normalized();
+            model_transform.pre_multiply(Mat4.from(
+                [
+                    [x[0],y[0],z[0],0],
+                    [x[1],y[1],z[1],0],
+                    [x[2],y[2],z[2],0],
+                    [0,0,0,1],
+                ]
+            ));
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
+            
             //this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
             this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
         }
 
         // render the track with some debug info
-        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(1,1,1,1) });
         for (let p of this.shapes.track.arrays.position) {
             let model_transform = Mat4.scale(0.05, 0.05, 0.05);
             model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
