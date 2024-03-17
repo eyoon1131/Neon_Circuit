@@ -4,7 +4,7 @@ import { Car, Enemy } from './new_scripts/particle.js';
 import { Simulation } from './new_scripts/simulation.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
-import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard } from "./ui/ui.js";
+import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard, CarAvatar} from "./ui/ui.js";
 import { Scene2Texture } from "./ui/scene2texture.js";
 import { CarShape } from './car/car.js';
 
@@ -84,7 +84,7 @@ export
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
-                this.simulation.lap_goal = 3;
+                this.simulation.lap_goal = 1;
                 // collision handling
                 this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH - TRACK_WALL_WIDTH / 2, 2 * car.scale_factors[0]));
 
@@ -148,7 +148,8 @@ export
                 this.lap_animation = new LapAnimation();
                 this.top_banner = new TopBanner();
                 this.leaderboard = new Leaderboard();
-                this.ui = [this.top_banner, this.start_animation, this.lap_animation, this.leaderboard];
+                this.car_avatar = new CarAvatar(this.shapes.cars);
+                this.ui = [ this.top_banner, this.start_animation, this.lap_animation, this.leaderboard, this.car_avatar ];
                 for (let i = 1; i < NUM_CARS; i++) {
                     const enemyPathPoints = [
                         //hermiteCurvePoints[0].plus(vec3((i - 1) * 0.3 * TRACK_WIDTH , 0, (i - 1) * 0.3 * TRACK_WIDTH)),
@@ -296,6 +297,8 @@ export class game_world extends game_world_base {                               
         if (this.simulation.lap_goal === this.laps_completed){
             console.log("Game end!", this.simulation.leaderboard);
             this.leaderboard.update(this.simulation.leaderboard);
+            this.car_avatar.update_positions(this.simulation.leaderboard);
+            this.car_avatar.enable();
         }
 
         if (t_step > 3){
@@ -372,6 +375,7 @@ export class game_world extends game_world_base {                               
 
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
+        console.log(this.uniforms.camera_inverse);
         for (const i in this.ui) {
             console.log(this.ui[i])
             this.ui[i].draw(caller, this.uniforms);

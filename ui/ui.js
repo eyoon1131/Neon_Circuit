@@ -56,6 +56,7 @@ export class UI {
      */
     static update_camera(look_at) {
         UI.camera_transform = look_at;
+        // console.log(look_at, Mat4.inverse(look_at))
         UI.camera_inverse = Mat4.inverse(look_at);
     }
 
@@ -72,13 +73,20 @@ export class UI {
 
     get_transform_custom_cam_projection(x_offset, y_offset, width, height, camera_inverse, projection_inverse) {
         // First, get the transform of the UI in camera space.
-        const transform = Mat4.identity();
+        let transform = Mat4.identity();
+        //console.log("0", transform, Mat4.identity(), camera_inverse, projection_inverse)
         transform.post_multiply(camera_inverse);
+        //console.log("1", transform, Mat4.identity().post_multiply(camera_inverse))
         transform.post_multiply(projection_inverse);
+        //console.log("2", transform,  Mat4.identity().post_multiply(camera_inverse).post_multiply(projection_inverse))
 
         // Then, properly scale and translate the UI.
         transform.post_multiply(Mat4.translation(x_offset, y_offset, 0));
+        //console.log("3", transform)
+
         transform.post_multiply(Mat4.scale(width, height, 1));
+        //console.log("4", transform, Mat4.identity().post_multiply(camera_inverse).post_multiply(projection_inverse).post_multiply(Mat4.translation(x_offset, y_offset, 0)).post_multiply(Mat4.scale(width, height, 1)))
+
 
         return transform;
     }
@@ -127,8 +135,8 @@ export class TopBanner extends UI {
             }
         };
 
-        this.text = new TextLine('Untitled Marble Racer', "blomberg", text_color, text_border_color);
-        this.text.set_position(0, .985, 0.002);
+        this.text = new TextLine('Untitled Marble Racer', "gentleman", text_color, text_border_color);
+        this.text.set_position(0, .99, 0.002);
         this.text.set_extra_space(2.5);
 
         this._enabled = true;
@@ -184,6 +192,83 @@ export class TopBanner extends UI {
 
     }
 }
+export class CarAvatar extends UI {
+    constructor(car_shapes) {
+        super();
+        // Register sub-scene drawers
+        this.car_drawers = [];
+        this.car_shapes = car_shapes;
+        this.shapes = {
+            circle: new defs.Regular_2D_Polygon(1, 30)
+        }
+        this.car_materials = {}
+        this.car_positions = [-1, -1, -1, -1]
+        for (let i = 0; i < 4; i++) {
+            this.car_drawers.push(new SceneDrawer(256, 256, ((c, p) => this.draw_car(c, p, i)).bind(this)));
+            Scene2Texture.register(this.car_drawers[i]);
+            this.car_materials[i] = {
+                shader: new defs.Textured_Phong(1),
+                ambient: 1,
+                texture: this.car_drawers[i].texture,
+            }
+            console.log(this.car_drawers[i].texture)
+        }
+        this._enabled = false;
+    }
+
+    enable() {
+        this._enabled = true;
+    }
+
+    update_positions(leaderboard_stats) {
+        for (let i = 0; i < 4; i++) {
+            if (i < leaderboard_stats.length)
+                this.car_positions[i] = leaderboard_stats[i][0]-1;
+            else
+                this.car_positions[i] = -1;
+        }
+    }
+    // use this to draw car as texture
+    draw_car(caller, uniforms, i) {
+        uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 10000);
+
+        // Camera and lighting rotation.
+        const rotate_r = 3.8;
+        let cam_x = 0;
+        let cam_y = rotate_r;
+
+        uniforms.camera_inverse = Mat4.look_at(vec3(cam_x, 1, cam_y), vec3(0, 0, 0), vec3(0, 1, 0));
+
+        // Display object
+        let obj_tr = Mat4.identity();
+        obj_tr.post_multiply(Mat4.rotation(2*Math.PI/3, 0, -1, 0));
+
+        this.car_shapes[(i+1).toString()].draw(caller, uniforms, obj_tr);
+    }
+
+    draw(caller, uniforms) {
+        super.draw(caller, uniforms);
+        const aspect_ratio = caller.width / caller.height;
+
+        // Draw player avatars
+        const avatar_scale = 0.6;
+        const avatar_width = 0.1 * avatar_scale;
+        const avatar_height = avatar_width * aspect_ratio;
+        for (let i = 0; i < 4; i++) {
+            const avatar_transform = super.get_transform(
+                0.6,
+                0.4 - i*2*avatar_height,
+                avatar_width, 
+                avatar_height
+            );
+            avatar_transform.post_multiply(Mat4.scale(avatar_scale, avatar_scale, 1));
+            // console.log(this.car_materials[i])
+            // console.log(this.car_positions[i])
+            if (this.car_positions[i] !== -1)
+                this.shapes.circle.draw(caller, uniforms, avatar_transform, this.car_materials[this.car_positions[i]]);
+        }
+    }
+}
 
 export class Leaderboard extends UI {
     constructor(num_entries = 4) {
@@ -217,7 +302,7 @@ export class Leaderboard extends UI {
             }
         };
 
-        this.text = new TextLine('Leaderboard', "blomberg", text_color, text_border_color);
+        this.text = new TextLine('Leaderboard', "gentleman", text_color, text_border_color);
         this.text.set_position(LEADERBOARD_HOFFSET, LEADERBOARD_VOFFSET, 0.0015);
         this.text.set_extra_space(2.5);
 
