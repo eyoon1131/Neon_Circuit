@@ -7,13 +7,16 @@ const {
 
 const YELLOW = color(1, 0.7, 0.2, 1);
 
+/**
+ * need to keep time string length fixed to avoid problems with text rendering
+ * */
 function formatTime(seconds) {
     var minutes = Math.floor(seconds / 60);
     var remainingSeconds = Math.floor(seconds % 60);
     var milliseconds = Math.floor((seconds - Math.floor(seconds)) * 1000);
     
     // Ensure each component has two digits
-    minutes = minutes < 10 ? '0' + minutes : minutes;
+    minutes = minutes < 10 ? ' ' + minutes : minutes;
     remainingSeconds = remainingSeconds < 10 ? '0' + remainingSeconds : remainingSeconds;
     milliseconds = milliseconds < 10 ? '00' + milliseconds : (milliseconds < 100 ? '0' + milliseconds : milliseconds);
     
@@ -206,12 +209,11 @@ export class UIAnimation extends UI {
 /**
  * Animates the start of race
  */
-export class GameAnimation extends UIAnimation {
+export class StartAnimation extends UIAnimation {
     constructor() {
         super();
         this.text = new TextLine(' 3 ', 'gentleman', YELLOW, color(1, 1, 1, 1));
     }
-
 
     display(context, program_state) {
         super.display(context, program_state);
@@ -377,7 +379,6 @@ export class TextLine extends UI {
                 };
             });
     }
-
     /**
      * Set the position and scale of the text.
      * @param x -- The x position of the text
@@ -443,7 +444,6 @@ export class TextLine extends UI {
         this.text_shape.draw(context, program_state, transform, {...this.text_texture, color: this.color});
     }
 }
-
 
 /**
  * TestShape is a 2d shape object that can display texts with various fonts.

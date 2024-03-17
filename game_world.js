@@ -4,7 +4,7 @@ import {Car, Enemy} from './new_scripts/particle.js';
 import {Simulation} from './new_scripts/simulation.js';
 import {detectTrackCollision, trackCollisionDebug} from './collision/collision-handling.js';
 
-import {GameAnimation, TopBanner, LapAnimation, UI} from "./ui/ui.js";
+import {StartAnimation, TopBanner, LapAnimation, UI} from "./ui/ui.js";
 import {Scene2Texture} from "./ui/scene2texture.js";
 
 // Pull these names into this module's scope for convenience:
@@ -135,11 +135,11 @@ export
                 this.shapes.curves = [];
 
                 // ui
-                this.game_animation = new GameAnimation();
+                this.start_animation = new StartAnimation();
                 this.lap_animation = new LapAnimation();
                 this.laps_completed = 0;
                 this.top_banner = new TopBanner();
-                this.ui = [this.top_banner, this.game_animation, this.lap_animation];
+                this.ui = [this.top_banner, this.start_animation, this.lap_animation];
                 for (let i = 1; i < NUM_CARS; i++) {
                     const enemyPathPoints = [
                         //hermiteCurvePoints[0].plus(vec3((i - 1) * 0.3 * TRACK_WIDTH , 0, (i - 1) * 0.3 * TRACK_WIDTH)),
@@ -264,12 +264,12 @@ export class game_world extends game_world_base {                               
 
         /**** UI setup *****/
         Scene2Texture.draw(caller, this.uniforms);
-        if (!this.game_animation.started){
-            this.game_animation.start()
+        if (!this.start_animation.started){
+            this.start_animation.start()
         }
-        this.game_animation.time_now = t_step;
+        this.start_animation.time_now = t_step;
         if (t_step > START_ANIMATION_LENGTH){
-            this.game_animation.end()
+            this.start_animation.end()
         }
         
         if (this.simulation.particles[0].laps > this.laps_completed){
@@ -337,26 +337,6 @@ export class game_world extends game_world_base {                               
             this.shapes.axis.draw(caller, this.uniforms, model_transform,  { ...this.materials.plastic, color: color(0,1,0,1) });
         }
 
-        // Collision debug section
-        // let collision_debug_info = trackCollisionDebug(car, this.curve_fn, 5-0.8, 2*car.scale_factors[0]);
-        // const track_center_pos = collision_debug_info.track_center;
-        // const track_horizontal = collision_debug_info.track_horizontal;
-        // const wall_pos = collision_debug_info.wall_pos;
-        // const car_collision_point = collision_debug_info.car_collision_point;
-
-        // let track_center_transform = Mat4.scale(0.05, 20, 0.05);
-        // track_center_transform.pre_multiply(Mat4.translation(track_center_pos[0], track_center_pos[1], track_center_pos[2]));
-
-        // let wall_transform = Mat4.scale(0.05, 20, 0.05);
-        // wall_transform.pre_multiply(Mat4.translation(wall_pos[0], wall_pos[1], wall_pos[2]));
-
-        // let car_collision_transform = Mat4.scale(0.05, 20, 0.05);
-        // car_collision_transform.pre_multiply(Mat4.translation(car_collision_point[0], car_collision_point[1], car_collision_point[2]));
-
-        // this.shapes.box.draw(caller, this.uniforms, track_center_transform, { ...this.materials.metal, color: color(0, 0, 1, 1) });
-        // this.shapes.box.draw(caller, this.uniforms, wall_transform, { ...this.materials.metal, color: color(0, 1, 0, 1) });
-        // this.shapes.box.draw(caller, this.uniforms, car_collision_transform, { ...this.materials.metal, color: color(1, 0, 0, 1) });
-
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
         for (const i in this.ui) {
@@ -422,15 +402,5 @@ export class game_world extends game_world_base {                               
             () => this.simulation.paused =! this.simulation.paused);
 
 
-    }
-
-    parse_commands() {
-        document.getElementById("output").value = "parse_commands";
-        //TODO
-    }
-
-    start() { // callback for Run button
-        document.getElementById("output").value = "start";
-        //TODO
     }
 }
