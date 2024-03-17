@@ -331,7 +331,7 @@ export class game_world extends game_world_base {                               
         const blue = color(0, 0, 1, 1), yellow = color(0.7, 1, 0, 1), red = color(1, 0, 0, 1), purple = color(0.5, 0, 0.5, 1);
 
         let t_step = this.t = this.uniforms.animation_time / 1000;
-        let dt = this.dt = Math.min(1 / 60, this.uniforms.animation_delta_time / 1000);
+        let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
         /**** UI setup *****/
         Scene2Texture.draw(caller, this.uniforms);
