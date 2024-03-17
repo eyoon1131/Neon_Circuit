@@ -47,7 +47,7 @@ export class Simulation {
         for (const p of this.particles) {
             p.update(this, dt);
         }
-        console.log(this.leaderboard);
+        // console.log(this.leaderboard);
 
     }
 }

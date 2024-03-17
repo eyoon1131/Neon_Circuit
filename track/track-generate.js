@@ -13,6 +13,7 @@ function _curveDerivative(curveFunction, t) {
 }
 
 export function getTimeOnCurve(position, curveFunction) {
+
     // simple scan-point approach
     const step = (x) => (x / SCAN_POINTS);
     let ans = 0, minPoint = null;

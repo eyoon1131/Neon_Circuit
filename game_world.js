@@ -1,11 +1,11 @@
-import {defs, tiny} from './examples/common.js';
-import {Curve, HermiteFactory, Track} from './track/track-generate.js';
-import {Car, Enemy} from './new_scripts/particle.js';
-import {Simulation} from './new_scripts/simulation.js';
-import {detectTrackCollision, trackCollisionDebug} from './collision/collision-handling.js';
+import { defs, tiny } from './examples/common.js';
+import { Curve, HermiteFactory, Track } from './track/track-generate.js';
+import { Car, Enemy } from './new_scripts/particle.js';
+import { Simulation } from './new_scripts/simulation.js';
+import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
-import {GameAnimation, TopBanner, TurnAnimation, UI} from "./ui/ui.js";
-import {Scene2Texture} from "./ui/scene2texture.js";
+import { GameAnimation, TopBanner, TurnAnimation, UI } from "./ui/ui.js";
+import { Scene2Texture } from "./ui/scene2texture.js";
 import { CarShape } from './car/car.js';
 
 // Pull these names into this module's scope for convenience:
@@ -82,7 +82,7 @@ export
                 this.simulation.u_static = 0.6;
                 this.simulation.lap_goal = 5;
                 // collision handling
-                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH-TRACK_WALL_WIDTH/2, 2*car.scale_factors[0]));
+                this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH - TRACK_WALL_WIDTH / 2, 2 * car.scale_factors[0]));
 
 
                 // this.simulation.track_width = 10;
@@ -104,7 +104,7 @@ export
                     vec3(-100, 0, -100),
                     vec3(-100, 0, 100)
                 ];
-                const hermiteFunction=this.curve_fn =
+                const hermiteFunction = this.curve_fn =
                     HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
                 this.shapes.track = new Track(
                     TRACK_WIDTH,
@@ -150,7 +150,7 @@ export
                         hermiteCurvePoints[2].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10))),
                         hermiteCurvePoints[3].plus(vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10))),
                         hermiteCurvePoints[4].plus(vec3(get_start_offset(i), 0, get_start_offset(i))),
-                    ] , enemyPathTangents = [
+                    ], enemyPathTangents = [
                         hermiteCurveTangents[0],
                         hermiteCurveTangents[1],
                         hermiteCurveTangents[2],
@@ -174,14 +174,14 @@ export
                     car.max_speed = 20;
                     car.color = colors[i];
 
-                    this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[i], hermiteFunction, TRACK_WIDTH-TRACK_WALL_WIDTH/2, 2*car.scale_factors[0]));
+                    this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[i], hermiteFunction, TRACK_WIDTH - TRACK_WALL_WIDTH / 2, 2 * car.scale_factors[0]));
 
                     //this.shapes.curve2 = new Curve([enemy2PathFunction, 0, 0], 1000);
                     this.shapes.curves.push(new Curve([enemyPathFunction, 0, 0], 1000));
                 }
             }
 
-            render_animation(caller) {                                                
+            render_animation(caller) {
                 // display():  Called once per frame of animation.  We'll isolate out
                 // the code that actually draws things into Part_one_hermite, a
                 // subclass of this Scene.  Here, the base class's display only does
@@ -204,9 +204,9 @@ export
                     //const eye = at.minus(car.forward_dir)
                     const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
                     Shader.assign_camera(Mat4.look_at(
-                            at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
-                    }
-                    this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
+                        at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+                }
+                this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
 
                 // *** Lights: *** Values of vector or point lights.  They'll be consulted by
                 // the shader when coloring shapes.  See Light's class definition for inputs.
@@ -279,7 +279,7 @@ export class game_world extends game_world_base {                               
         }
         // !!! Draw ground
         let floor_transform = Mat4.translation(0, -1, 0).times(Mat4.scale(100, 0.01, 100));
-        this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
+        this.shapes.box.draw(caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow });
 
         const t_next = t_step + dt;
         while (t_step < t_next) {
@@ -298,25 +298,27 @@ export class game_world extends game_world_base {                               
             const pos = p.pos;
             const scale = p.scale_factors;
             let model_transform = Mat4.scale(scale[0], scale[1], scale[2]);
-            // let theta = p.get_rotation();
-            // model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
-            let y = vec3(0, 1, 0), x = p.vel.norm() > 0.1 ? p.vel.normalized():vec3(-1,0,1).normalized(), z = x.cross(y).normalized();
-            model_transform.pre_multiply(Mat4.from(
-                [
-                    [x[0],y[0],z[0],0],
-                    [x[1],y[1],z[1],0],
-                    [x[2],y[2],z[2],0],
-                    [0,0,0,1],
-                ]
-            ));
+            let theta = p.get_rotation();
+            model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
+            if (i !== 0) {
+                let y = vec3(0, 1, 0), x = p.vel.norm() > 0.1 ? p.vel.normalized() : vec3(-1, 0, 1).normalized(), z = x.cross(y).normalized();
+                model_transform.pre_multiply(Mat4.from(
+                    [
+                        [x[0], y[0], z[0], 0],
+                        [x[1], y[1], z[1], 0],
+                        [x[2], y[2], z[2], 0],
+                        [0, 0, 0, 1],
+                    ]
+                ));
+            }
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
-            
+
             //this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
             this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
         }
 
         // render the track with some debug info
-        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(1,1,1,1) });
+        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(1, 1, 1, 1) });
         for (let p of this.shapes.track.arrays.position) {
             let model_transform = Mat4.scale(0.05, 0.05, 0.05);
             model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
@@ -331,7 +333,7 @@ export class game_world extends game_world_base {                               
                 [0, 0, 0, 1],
             ]));
             model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
-            this.shapes.axis.draw(caller, this.uniforms, model_transform,  { ...this.materials.plastic, color: color(0,1,0,1) });
+            this.shapes.axis.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: color(0, 1, 0, 1) });
         }
 
         // Collision debug section
@@ -363,10 +365,10 @@ export class game_world extends game_world_base {                               
         // end ui
 
         for (let i = 0; i < this.shapes.curves.length; i++) {
-            this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6,0.6,0.6,0.99) });
+            this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6, 0.6, 0.6, 0.99) });
         }
 
-        let finish_line_transform = Mat4.scale(0.2, 0.01 , TRACK_WIDTH * 0.5);
+        let finish_line_transform = Mat4.scale(0.2, 0.01, TRACK_WIDTH * 0.5);
         finish_line_transform.pre_multiply(Mat4.rotation(
             Math.atan(this.simulation.finish_line[0] / this.simulation.finish_line[2]),
             0, 1, 0
@@ -386,7 +388,7 @@ export class game_world extends game_world_base {                               
             () => this.simulation.brake_pressed = true, "#6E6460",
             () => this.simulation.brake_pressed = false);
         this.new_line();
-        this.key_triggered_button("Left",["a"],
+        this.key_triggered_button("Left", ["a"],
             () => this.simulation.left_pressed = true, "#6E6460",
             () => this.simulation.left_pressed = false);
         this.key_triggered_button("Right", ["d"],
@@ -412,12 +414,12 @@ export class game_world extends game_world_base {                               
 
         this.control_panel.innerHTML += "Camera Controls: <br>";
         this.key_triggered_button("Attach/Detach Camera", ["Shift", "F"],
-            () => this.free_camera =! this.free_camera);
+            () => this.free_camera = !this.free_camera);
         this.new_line();
 
         this.control_panel.innerHTML += "Game Options: <br>";
         this.key_triggered_button("Pause", ["Escape"],
-            () => this.simulation.paused =! this.simulation.paused);
+            () => this.simulation.paused = !this.simulation.paused);
 
 
     }
