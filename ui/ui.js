@@ -235,9 +235,11 @@ export class CarAvatar extends UI {
         // Camera and lighting rotation.
         const rotate_r = 3.8;
         let cam_x = 0;
-        let cam_y = rotate_r;
+        let cam_z = rotate_r;
+        uniforms.camera_inverse = Mat4.look_at(vec3(cam_x, 1, cam_z), vec3(0, 0, 0), vec3(0, 1, 0));
+        uniforms.lights = [defs.Phong_Shader.light_source(vec4(0, 1, 6, 1), color(1, 1, 1, 1), 1000)];
 
-        uniforms.camera_inverse = Mat4.look_at(vec3(cam_x, 1, cam_y), vec3(0, 0, 0), vec3(0, 1, 0));
+        uniforms.camera_inverse = Mat4.look_at(vec3(cam_x, 1, cam_z), vec3(0, 0, 0), vec3(0, 1, 0));
 
         // Display object
         let obj_tr = Mat4.identity();

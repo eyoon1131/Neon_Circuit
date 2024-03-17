@@ -160,6 +160,7 @@ export
 
                 // ui
                 this.laps_completed = 0;
+                this.texture_generated = 0;
 
                 this.start_animation = new StartAnimation();
                 this.lap_animation = new LapAnimation();
@@ -335,8 +336,12 @@ export class game_world extends game_world_base {                               
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
         /**** UI setup *****/
+        // if (this.texture_generated !== 2){
+            
+        //     this.texture_generated ++;
+        // }
+        Scene2Texture.draw(caller, this.uniforms);
         if (!this.start_animation.started) {
-            Scene2Texture.draw(caller, this.uniforms);
             this.start_animation.start()
         }
         this.start_animation.time_now = t_step;

@@ -67,6 +67,7 @@ export class Scene2Texture {
             caller.context.clear(caller.context.COLOR_BUFFER_BIT | caller.context.DEPTH_BUFFER_BIT);
             uniforms.camera_inverse = cam_matrix_backup;
             uniforms.projection_transform = proj_matrix_backup;
+            uniforms.lights = light_backup;
         }
     }
 }
