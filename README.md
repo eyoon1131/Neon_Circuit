@@ -1,4 +1,5 @@
-Team Project CS C174C
+# Marble Racer - Team Project CS C174C
+John Li, Dyson Huo, Eliot Yoon, Daniel Kim
 
-For track and collision, see 
-[Procedural Track Generation from Curve](./track/track-and-collision.md).
+See 
+[Report](./REPORT.md).
