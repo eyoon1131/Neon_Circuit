@@ -1,8 +1,8 @@
-import { defs, tiny } from './examples/common.js';
-import { Curve, HermiteFactory, Track } from './track/track-generate.js';
-import { Car, Enemy } from './new_scripts/particle.js';
-import { Simulation } from './new_scripts/simulation.js';
-import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
+import {defs, tiny} from './examples/common.js';
+import {Curve, HermiteFactory, Track} from './track/track-generate.js';
+import {Enemy, Item, Car, User} from './new_scripts/particle.js';
+import {Simulation} from './new_scripts/simulation.js';
+import {detectTrackCollision, trackCollisionDebug} from './collision/collision-handling.js';
 
 import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard } from "./ui/ui.js";
 import { Scene2Texture } from "./ui/scene2texture.js";
@@ -14,6 +14,7 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 // TODO: you should implement the required classes here or in another file.
 
 const CAR_SCALE = 0.4;
+const ITEM_SCALE = 0.2;
 
 const TRACK_WIDTH = 10;
 const TRACK_HEIGHT = 0.1;
@@ -23,6 +24,8 @@ const TRACK_DIVISIONS = 100;
 const TRACK_LIGHT_NUM = 10;
 
 const NUM_CARS = 4;
+const NUM_ITEMS = 6;
+
 
 
 // UI
@@ -127,7 +130,7 @@ export
                 const colors = [blue, yellow, red, purple];
 
                 // car setup
-                this.simulation.particles.push(new Car());
+                this.simulation.particles.push(new User());
                 let car = this.simulation.particles[0];
                 car.id = 1;
                 car.mass = 1.0;
@@ -135,10 +138,10 @@ export
                 car.pos = vec3(hermiteCurvePoints[0][0] + get_start_offset(0), CAR_SCALE, hermiteCurvePoints[0][2] + get_start_offset(0));
                 car.vel = vec3(0.0, 0.0, 0.0);
                 car.valid = true;
-                car.forward_dir = vec3(-1, 0, 1).normalized();
+                car.forward_dir = hermiteCurveTangents[0].normalized();
                 car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                 car.delta_pos = vec3(0, 0, 0);
-                car.max_speed = 20;
+                car.max_speed = 18;
                 car.color = blue;
 
                 this.shapes.curves = [];
@@ -177,6 +180,7 @@ export
                     car.pos = vec3(enemyPathPoints[0][0], CAR_SCALE, enemyPathPoints[0][2]);
                     car.vel = vec3(0, 0.0, 0.0);
                     car.valid = true;
+                    car.forward_dir = hermiteCurveTangents[0].normalized();
                     car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                     car.delta_pos = vec3(0, 0, 0);
                     car.path_fn = enemyPathFunction;
@@ -187,6 +191,27 @@ export
 
                     //this.shapes.curve2 = new Curve([enemy2PathFunction, 0, 0], 1000);
                     this.shapes.curves.push(new Curve([enemyPathFunction, 0, 0], 1000));
+                }
+
+                for (let i = 0; i < NUM_ITEMS; i++) {
+                    let rand_t = Math.random() * 0.75 + 0.15;
+                    const random_pos = hermiteFunction(rand_t).plus(
+                        vec3((Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10), 0, (Math.random() - 0.5) * (TRACK_WIDTH - CAR_SCALE * 10)));
+                    let item = new Item();
+                    item.mass = 1;
+                    item.pos = vec3(random_pos[0], ITEM_SCALE, random_pos[2]);
+                    item.vel = vec3(0, 0, 0);
+                    item.valid = true;
+                    item.scale_factors = vec3(ITEM_SCALE, ITEM_SCALE, ITEM_SCALE);
+                    if (i < NUM_ITEMS / 2) {
+                        item.color = blue;
+                        item.effect = 1; // speed boost
+                    }
+                    else {
+                        item.color = red;
+                        item.effect = 2; // slow
+                    }
+                    this.simulation.particles.push(item);
                 }
             }
 
@@ -289,13 +314,13 @@ export class game_world extends game_world_base {                               
         if (t_step > START_ANIMATION_LENGTH) {
             this.start_animation.end()
         }
-        
+
         if (this.simulation.particles[0].laps > this.laps_completed){
             const cur_lap = this.simulation.particles[0].laps;
             console.log("lap completed")
             if (cur_lap === this.simulation.lap_goal)
                 this.lap_animation.final_lap(this.simulation.leaderboard);
-            else 
+            else
                 this.lap_animation.update( cur_lap, this.simulation.lap_goal )
 
             this.lap_animation.start();
@@ -338,25 +363,30 @@ export class game_world extends game_world_base {                               
 
         let i = 0;
         for (const p of this.simulation.particles) {
+            if (!p.valid)
+                continue;
             const pos = p.pos;
             const scale = p.scale_factors;
             let model_transform = Mat4.scale(scale[0], scale[1], scale[2]);
             let theta = p.get_rotation();
             model_transform.pre_multiply(Mat4.rotation(-theta, 0, 1, 0));
-            if (i !== 0) {
-                let y = vec3(0, 1, 0), x = p.vel.norm() > 0.1 ? p.vel.normalized() : vec3(-1, 0, 1).normalized(), z = x.cross(y).normalized();
-                model_transform.pre_multiply(Mat4.from(
-                    [
-                        [x[0], y[0], z[0], 0],
-                        [x[1], y[1], z[1], 0],
-                        [x[2], y[2], z[2], 0],
-                        [0, 0, 0, 1],
-                    ]
-                ));
-            }
+            // if (i !== 0) {
+            //     let y = vec3(0, 1, 0), x = p.vel.norm() > 0.1 ? p.vel.normalized() : vec3(-1, 0, 1).normalized(), z = x.cross(y).normalized();
+            //     model_transform.pre_multiply(Mat4.from(
+            //         [
+            //             [x[0], y[0], z[0], 0],
+            //             [x[1], y[1], z[1], 0],
+            //             [x[2], y[2], z[2], 0],
+            //             [0, 0, 0, 1],
+            //         ]
+            //     ));
+            // }
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
             //this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
-            this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
+            if (p.is_car)
+                this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
+            else
+                this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
         }
 
         // render the track with some debug info
@@ -451,11 +481,6 @@ export class game_world extends game_world_base {                               
         this.key_triggered_button("Attach/Detach Camera", ["Shift", "F"],
             () => this.free_camera = !this.free_camera);
         this.new_line();
-
-        this.control_panel.innerHTML += "Game Options: <br>";
-        this.key_triggered_button("Pause", ["Escape"],
-            () => this.simulation.paused = !this.simulation.paused);
-
 
     }
 }
