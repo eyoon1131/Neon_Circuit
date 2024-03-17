@@ -72,13 +72,13 @@ export class UI {
      * @param width The width of the UI.
      * @param height The height of the UI.
      */
-    get_transform(x_offset, y_offset, width, height) {
-        return this.get_transform_custom_cam_projection(x_offset, y_offset, width, height, UI.camera_inverse, this.projection_inverse);
+    get_transform(x_offset, y_offset, width, height,z =0) {
+        return this.get_transform_custom_cam_projection(x_offset, y_offset, width, height, UI.camera_inverse, this.projection_inverse,z);
     }
 
-    get_transform_custom_cam_projection(x_offset, y_offset, width, height, camera_inverse, projection_inverse) {
+    get_transform_custom_cam_projection(x_offset, y_offset, width, height, camera_inverse, projection_inverse, z=0) {
         // First, get the transform of the UI in camera space.
-        let transform = Mat4.identity();
+        let transform = Mat4.translation(0,0,z);
         //console.log("0", transform, Mat4.identity(), camera_inverse, projection_inverse)
         transform.post_multiply(camera_inverse);
         //console.log("1", transform, Mat4.identity().post_multiply(camera_inverse))
@@ -247,7 +247,7 @@ export class CarAvatar extends UI {
     }
 
     draw(caller, uniforms) {
-        super.draw(caller, uniforms);
+        super.draw(caller, uniforms); 
         const aspect_ratio = caller.width / caller.height;
 
         // Draw player avatars
@@ -332,7 +332,7 @@ export class Leaderboard extends UI {
         super.draw(caller, uniforms);
 
         if (!this._enabled) return;
-
+        
         // // Draw background.
         const bg_transform = super.get_transform(LEADERBOARD_HOFFSET, LEADERBOARD_VOFFSET-0.4625, 0.225, 0.5);
         bg_transform.post_multiply(Mat4.translation(0, 0, 0.01));
@@ -537,14 +537,14 @@ export class LapAnimation extends UIAnimation {
 
         const text = this.text;
         text.set_alpha(alpha);
-        text.set_position(text_pos, 0.08, 0.002);
+        text.set_position(text_pos, 0.08, 0.002, -0.1);
         text.draw(caller, uniforms);
 
-        let tr = super.get_transform(upper_banners_pos, 0.18, 1.2, .06);
+        let tr = super.get_transform(upper_banners_pos, 0.18, 1.2, .06, -0.1);
         this.parallelogram.draw(caller, uniforms, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
-        tr = super.get_transform(lower_banners_pos, -0.18, 1.2, .06);
+        tr = super.get_transform(lower_banners_pos, -0.18, 1.2, .06, -0.1);
         this.parallelogram.draw(caller, uniforms, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
-        tr = super.get_transform(0, 0, 1.2, .12);
+        tr = super.get_transform(0, 0, 1.2, .12,-0.1);
         this.parallelogram.draw(caller, uniforms, tr, {...this.bg_material, color: color(1, 1, 1, alpha)});
     }
 }
@@ -584,9 +584,10 @@ export class TextLine extends UI {
      * @param y -- The y position of the text
      * @param size -- The size of the text
      */
-    set_position(x, y, size) {
+    set_position(x, y, size,z = 0) {
         this.x = x;
         this.y = y;
+        this.z = z;
         this.size = size;
     }
 
@@ -638,7 +639,7 @@ export class TextLine extends UI {
 
         const aspect_ratio = caller.width / caller.height;
         let left_shift = this.text_shape.text_width / 2 * this.size;
-        const transform = super.get_transform(this.x - left_shift, this.y, this.size, this.size * aspect_ratio);
+        const transform = super.get_transform(this.x - left_shift, this.y, this.size, this.size * aspect_ratio,this.z);
 
         this.text_shape.draw(caller, uniforms, transform, {...this.text_texture, color: this.color});
     }
