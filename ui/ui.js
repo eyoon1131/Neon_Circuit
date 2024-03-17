@@ -7,6 +7,11 @@ const {
 
 const YELLOW = color(1, 0.7, 0.2, 1);
 
+const LEADERBOARD_HOFFSET = 0.7;
+const LEADERBOARD_ENTRY_SCALE = 0.6;
+const LEADERBOARD_VOFFSET = 0.6;
+
+
 /**
  * need to keep time string length fixed to avoid problems with text rendering
  * */
@@ -33,8 +38,8 @@ function format(num, digits) {
     return ' '.repeat(digits - str.length) + str;
 }
 
-function format_leaderboard_entry(entry) {
-    return `${entry[0]}: ${formatTime(entry[1])}`;
+function format_leaderboard_entry(entry, placement) {
+    return `${placement}: ${formatTime(entry[1])}`;
 }
 
 
@@ -251,7 +256,7 @@ export class CarAvatar extends UI {
         const aspect_ratio = caller.width / caller.height;
 
         // Draw player avatars
-        const avatar_scale = 0.6;
+        const avatar_scale = LEADERBOARD_ENTRY_SCALE;
         const avatar_width = 0.1 * avatar_scale;
         const avatar_height = avatar_width * aspect_ratio;
         for (let i = 0; i < 4; i++) {
@@ -274,8 +279,6 @@ export class Leaderboard extends UI {
     constructor(num_entries = 4) {
         super();
 
-        const LEADERBOARD_HOFFSET = 0.7;
-        const LEADERBOARD_VOFFSET = 0.6;
         const background_color = color(0.15, 0.22, 0.28, 0.8);
         const background_fade_color = color(0.27, 0.27, 0.3, 0.6);
         const text_color = color(1, 1, 1, 1);
@@ -310,7 +313,6 @@ export class Leaderboard extends UI {
         this.leaderboard_stats = [];
         for (let i = 0; i < num_entries; i++) {
             this.leaderboard_stats.push(new TextLine(' '.repeat(12), "roboto-regular", text_color, text_border_color));
-            this.leaderboard_stats[i].set_position(LEADERBOARD_HOFFSET, LEADERBOARD_VOFFSET - 0.2 - 0.1 * i, 0.001);
             this.leaderboard_stats[i].set_extra_space(2.5);
         }
 
@@ -328,7 +330,7 @@ export class Leaderboard extends UI {
     update(leaderboard_stats) {
         for (let i = 0; i < this.num_entries; i++) {
             if (i < leaderboard_stats.length) {
-                this.leaderboard_stats[i].text = format_leaderboard_entry(leaderboard_stats[i]);
+                this.leaderboard_stats[i].text = format_leaderboard_entry(leaderboard_stats[i], i+1);
             } else {
                 this.leaderboard_stats[i].text = ' '.repeat(12);
             }
@@ -344,12 +346,15 @@ export class Leaderboard extends UI {
         // const bg_transform = super.get_transform(0, 0.9, 1, 0.3);
         // bg_transform.post_multiply(Mat4.translation(0, 0, 0.01));
         // this.shapes.square.draw(caller, uniforms, bg_transform, this.materials.background_fade);
-
+        const aspect_ratio = caller.width / caller.height;
+        const entry_height = LEADERBOARD_ENTRY_SCALE * aspect_ratio * 0.2
         // Draw text.
         this.text.draw(caller, uniforms);
         for (let i = 0; i < this.num_entries; i++) {
+            this.leaderboard_stats[i].set_position(LEADERBOARD_HOFFSET, LEADERBOARD_VOFFSET - 0.2 - entry_height * i, 0.001);
             this.leaderboard_stats[i].draw(caller, uniforms);
         }
+
     }
 
 
