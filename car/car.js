@@ -23,7 +23,7 @@ export class CarShape extends Shape {
         this.load_file('/assets/car/car.obj');
         this.material = {
             shader: new defs.Textured_Phong(1), color: color(.5, .5, .5, 1),
-            ambient: .3, diffusivity: .5, specularity: .5,
+            ambient: .3, diffusivity: 0.1, specularity: 1,
             texture: new Texture(`/assets/car/${textureName}`)
         };
     }

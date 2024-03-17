@@ -5,31 +5,83 @@ import { getFrame, getTimeOnCurve} from "../track/track-generate.js";
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
-function are_colliding(p1, p2) {
+const SAFE_EDGE = 0.1;
+export function are_colliding(p1, p2) {
     if (p1 === p2)
         return false;
-    const dist = p1.pos.minus(p2.pos).norm();
-    return dist <= p1.scale_factors[0] + p2.scale_factors[0];
+    const p1_zx = vec3(p1.pos[0], 0, p1.pos[2]);
+    const p2_zx = vec3(p2.pos[0], 0, p2.pos[2]);
+    const dist = p1_zx.minus(p2_zx).norm();
+    return dist <= p1.scale_factors[0] + p2.scale_factors[0] + SAFE_EDGE;
 }
 
 export class Particle {
     constructor() {
-        this.id = 0;
         this.mass = 0;
         this.pos = vec3(0, 0, 0);
         this.vel = vec3(0, 0, 0);
         this.acc = vec3(0, 0, 0);
         this.ext_force = vec3(0, 0, 0);
+        this.max_speed = 0;
         this.valid = false;
         this.scale_factors = vec3(0, 0, 0);
-        this.delta_pos = vec3(0, 0, 0);
-        this.max_speed = 0;
-        this.angle_from_finish = 0;
-        this.laps = 0;
-        this.is_finished = false;
         this.color = null;
+        this.is_car = false;
     }
 
+    update(sim, dt) {
+        if (!this.valid)
+            return;
+
+        this.acc = this.ext_force.times(1.0 / this.mass);
+        this.vel = this.vel.plus(this.acc.times(dt));
+        this.pos = this.pos.plus(this.vel.times(dt));
+    }
+
+    handle_inputs(sim) {
+        this.ext_force = vec3(0, 0, 0);
+    }
+
+    handle_collision(sim) {
+        //let next_pos = this.pos.plus(this.vel.times(dt));
+        for (const p of sim.particles) {
+            if (p.valid && are_colliding(this, p)) {
+                if (p.is_car) {
+                    const total_vel = this.vel.plus(p.vel).norm();
+                    //console.log(total_vel);
+                    let this_to_p = p.pos.minus(this.pos);
+                    this_to_p[1] = 0;
+                    this_to_p.normalize();
+                    this.ext_force.add_by(this_to_p.times(-(total_vel ** 2)))
+                    p.ext_force.add_by(this_to_p.times(total_vel ** 2));
+                }
+                else {
+                    if (p.effect === 1)
+                        this.max_speed += 1;
+                    else if (p.effect === 2)
+                        this.max_speed -= 1;
+                    p.valid = false;
+                }
+            }
+        }
+    }
+
+    get_rotation() { // gives rotation of particle relative to x-axis in zx plane
+        return 0;
+    }
+}
+
+export class Car extends Particle {
+    constructor() {
+        super();
+        this.id = 0;
+        this.laps = 0;
+        this.delta_pos = vec3(0, 0, 0);
+        this.is_finished = false;
+        this.angle_from_finish = 0;
+        this.forward_dir = vec3(0, 0, 0); // need to initialize
+        this.is_car = true;
+    }
     update(sim, dt) {
         if (!this.valid)
             throw "Not initialized"
@@ -75,11 +127,10 @@ export class Particle {
         }
         if (delta_angle > 6)
             this.laps--;
-
     }
 
     handle_inputs(sim) {
-        this.ext_force = vec3(0, 0, 0);
+        super.handle_inputs(sim);
         const vel_unit = this.vel.normalized();
 
         const norm_force = sim.g_acc.times(-this.mass);
@@ -93,31 +144,18 @@ export class Particle {
         //console.log(this.delta_pos);
     }
 
-    handle_collision(sim) {
-        //let next_pos = this.pos.plus(this.vel.times(dt));
-        for (const p of sim.particles) {
-            if (are_colliding(this, p)) {
-                const total_vel = this.vel.plus(p.vel).norm();
-                //console.log(total_vel);
-                let this_to_p = p.pos.minus(this.pos);
-                this_to_p[1] = 0;
-                this_to_p.normalize();
-                this.ext_force.add_by(this_to_p.times(-(total_vel ** 2)))
-                p.ext_force.add_by(this_to_p.times(total_vel ** 2));
-            }
-        }
-    }
-
-    get_rotation() { // gives rotation of particle relative to x-axis in zx plane
-        return 0;
+    get_rotation() {
+        let theta = Math.acos(this.forward_dir.dot(vec3(1, 0, 0)));
+        // if z < 0, then forward_dir is more than 180 degrees ccw of x-axis
+        if (this.forward_dir[2] < 0)
+            theta = (2 * Math.PI - theta);
+        return theta;
     }
 }
 
-export class Car extends Particle {
+export class User extends Car {
     constructor() {
         super();
-        this.forward_dir = vec3(0, 0, 0); // need to initialize
-        this.collided = false;
         const turning_scale = 2.0/1000;
         this.left_turn_matrix = Mat4.rotation(turning_scale, 0, 1, 0);
         this.right_turn_matrix = Mat4.rotation(-turning_scale, 0, 1, 0);
@@ -128,7 +166,6 @@ export class Car extends Particle {
             this.forward_dir = this.left_turn_matrix.times(this.forward_dir.to4(1)).to3();
         if (sim.right_pressed)
             this.forward_dir = this.right_turn_matrix.times(this.forward_dir.to4(1)).to3();
-
     }
 
     handle_inputs(sim) {
@@ -142,7 +179,7 @@ export class Car extends Particle {
             return;
         }
 
-        if (sim.accel_pressed) 
+        if (sim.accel_pressed)
             this.ext_force.add_by(this.forward_dir.times(12.0));
         if (sim.brake_pressed)
             this.ext_force.subtract_by(this.forward_dir.times(10));
@@ -153,19 +190,18 @@ export class Car extends Particle {
 
     }
 
-    get_rotation() {
-        let theta = Math.acos(this.forward_dir.dot(vec3(1, 0, 0)));
-        // if z < 0, then forward_dir is more than 180 degrees ccw of x-axis
-        if (this.forward_dir[2] < 0)
-            theta = (2 * Math.PI - theta);
-        return theta;
-    }
 }
 
-export class Enemy extends Particle {
+export class Enemy extends Car {
     constructor() {
         super();
         this.path_fn = null;
+    }
+
+    update(sim, dt) {
+        super.update(sim, dt);
+        if (this.vel.norm() !== 0)
+            this.forward_dir = this.vel.normalized();
     }
 
     handle_inputs(sim) {
@@ -181,6 +217,19 @@ export class Enemy extends Particle {
         if (hor_acc.norm() !== 0)
             this.ext_force.add_by(hor_acc.normalized().times(this.vel.norm() * 1.2));
 
+    }
+}
 
+export class Item extends Particle {
+    constructor() {
+        super();
+        this.effect = 0;
+        this.spring_anchor = null;
+        this.spring = null;
+    }
+
+    handle_inputs(sim) {
+        super.handle_inputs(sim);
+        this.spring.update();
     }
 }

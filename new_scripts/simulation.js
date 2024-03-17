@@ -19,7 +19,6 @@ export class Simulation {
         this.u_static = 0;
         this.u_kinetic = 0;
         this.collision_funcs = [];
-        this.paused = false;
         this.elapsed_time = 0;
         this.finish_line = vec3(0, 0, 0);
         this.finish_line_slope = 0;
@@ -28,15 +27,16 @@ export class Simulation {
     }
 
     update(dt) {
-        if (this.paused)
-            return;
         this.elapsed_time += this.timestep;
         //console.log(this.elapsed_time);
         if (this.elapsed_time < 3)
             return;
         for (const p of this.particles) {
+            if (!p.valid)
+                continue;
             p.handle_inputs(this);
-            p.handle_collision(this);
+            if (p.is_car)
+                p.handle_collision(this);
         }
         for (const collision_func of this.collision_funcs) {
             collision_func(this);
@@ -45,6 +45,8 @@ export class Simulation {
             s.update();
         }
         for (const p of this.particles) {
+            if (!p.valid)
+                continue;
             p.update(this, dt);
         }
         //console.log(this.leaderboard);

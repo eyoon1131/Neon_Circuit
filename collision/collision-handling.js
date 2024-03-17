@@ -2,17 +2,18 @@ import { math } from '../tiny-graphics-math.js';
 import { getFrame, getTimeOnCurve } from '../track/track-generate.js';
 export const tiny = { ...math, math };
 
-const KS = 1000;
+const KS = 500;
 const KD = 50;
+
 
 
 // assumption: track is closed loop with fixed width
 function detectTrackCollision(particle, track_function, track_width, car_width){
     const position = particle.pos;
     let frame = getFrame(position, track_function);
-    let track_tangent = frame[0];
+    let track_tangent = frame[2];
     let track_normal = frame[1]; // up
-    let track_horizontal = frame[0]; // ???
+    let track_horizontal = frame[0];
     let track_center = frame[3];
 
     let center_to_pos = position.minus(track_center); // track center to car

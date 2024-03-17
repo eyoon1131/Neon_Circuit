@@ -1,11 +1,13 @@
 import { tiny } from '../tiny-graphics.js';
-import {defs} from "../main-scene.js";
+import { defs } from "../main-scene.js";
+
 
 // Pull these names into this module's scope for convenience:
 const { Vector3, Vector4, vec3, vec4, color, Matrix, Mat4, Shape, Shader, Component } = tiny;
 
-const TINY_STEP = 1e-6;
-const SCAN_POINTS =128.0;
+const TINY_STEP = 1e-3;
+const SCAN_POINTS = 128.0;
+
 function _curveDerivative(curveFunction, t) {
     return curveFunction(t + TINY_STEP)
         .minus(curveFunction(t))
@@ -40,7 +42,7 @@ export function getFrame(position, curveFunction) {
     return [tangent, normal, horizontal, point];
 }
 
-function getFrameFromT(t, curveFunction) {
+export function getFrameFromT(t, curveFunction) {
 
     const point = curveFunction(t);
     //console.log('t = ', t, 'p = ', point);
@@ -105,38 +107,153 @@ export function HermiteFactory(controlPoints, tangents) {
     });
 }
 
+export class TrackPhong extends defs.Phong_Shader {
+    constructor(num_of_lights = 2) {
+        super(num_of_lights);
+    }
+    // adopted from the original phong shader
+    shared_glsl_code() {          // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
+        return ` 
+      precision mediump float;
+      const int N_LIGHTS = ` + this.num_lights + `;
+      uniform float ambient, diffusivity, specularity, smoothness;
+      uniform vec4 light_positions_or_vectors[N_LIGHTS], light_colors[N_LIGHTS];
+      uniform float light_attenuation_factors[N_LIGHTS];
+    //   uniform vec4 shape_color;
+      uniform vec3 squared_scale, camera_center;
+
+      varying vec3 N, vertex_worldspace;
+      varying vec4 vertex_color;
+                                           // ***** PHONG SHADING HAPPENS HERE: *****
+      vec3 phong_model_lights( vec3 N, vec3 vertex_worldspace, vec4 v_color ) {
+          vec3 E = normalize( camera_center - vertex_worldspace );
+          vec3 result = vec3( 0.0 );
+          for(int i = 0; i < N_LIGHTS; i++) {
+              vec3 surface_to_light_vector = light_positions_or_vectors[i].xyz -
+                                             light_positions_or_vectors[i].w * vertex_worldspace;
+              float distance_to_light = length( surface_to_light_vector );
+
+              vec3 L = normalize( surface_to_light_vector );
+              vec3 H = normalize( L + E );
+              
+                // Compute diffuse and specular components of Phong Reflection Model.
+              float diffuse  =      max( dot( N, L ), 0.0 );
+              float specular = pow( max( dot( N, H ), 0.0 ), smoothness );     // Use Blinn's "halfway vector" method.
+              float attenuation = 1.0 / (1.0 + light_attenuation_factors[i] * distance_to_light * distance_to_light );
+
+
+              vec3 light_contribution = v_color.xyz * light_colors[i].xyz * diffusivity * diffuse
+                                                        + light_colors[i].xyz * specularity * specular;
+
+              result += attenuation * light_contribution;
+            }
+          return result;
+        } `;
+    }
+    vertex_glsl_code() {           // ********* VERTEX SHADER *********
+        return this.shared_glsl_code() + `
+        attribute vec3 position, normal;                            // Position is expressed in object coordinates.
+        attribute vec4 color;
+        uniform mat4 model_transform;
+        uniform mat4 projection_camera_model_transform;
+
+        void main() {                                                                
+            gl_Position = projection_camera_model_transform * vec4( position, 1.0 );     // Move vertex to final space.
+                                            // The final normal vector in screen space.
+            N = normalize( mat3( model_transform ) * normal / squared_scale);
+
+            vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+            vertex_color = color;
+        } `;
+    }
+    fragment_glsl_code() {          // ********* FRAGMENT SHADER *********
+        return this.shared_glsl_code() + `
+      void main() {                          
+                                         // Compute an initial (ambient) color:
+          gl_FragColor = vec4( vertex_color.xyz * ambient, vertex_color.w );
+                                         // Compute the final color with contributions from lights:
+          gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace, vertex_color );
+        } `;
+    }
+}
+
 export class Track extends Shape {
-    constructor(width, wallWidth, wallHeight, thickness, curveFunction, slices) {
+    constructor(width, wallWidth, wallHeight, thickness, curveFunction, slices, trackColor = color(1, 1, 1, 1), wallColor = color(1, 0, 0, 1)) {
         super("position", "normal", "color");
+        this.trackColor = trackColor;
+        this.wallColor = wallColor;
         // build basic points for further duplication
-        this.sliceBase = [    
+        this.sliceBase = [
             vec3(0, -thickness, -wallWidth - 0.5 * width),
             vec3(0, wallHeight, -wallWidth - 0.5 * width),
+            vec3(0, wallHeight, -wallWidth - 0.5 * width),
+            vec3(0, wallHeight, - 0.5 * width),
             vec3(0, wallHeight, - 0.5 * width),
             vec3(0, 0, -0.5 * width),
+            vec3(0, 0, -0.5 * width),
+            vec3(0, 0, 0.5 * width),
             vec3(0, 0, 0.5 * width),
             vec3(0, wallHeight, 0.5 * width),
+            vec3(0, wallHeight, 0.5 * width),
+            vec3(0, wallHeight, wallWidth + 0.5 * width),
             vec3(0, wallHeight, wallWidth + 0.5 * width),
             vec3(0, -thickness, wallWidth + 0.5 * width),
         ];
         this.baseNormals = [
-            vec3(0,-1,-1),
-            vec3(0,1,-1),
-            vec3(0,1,1),
-            vec3(0,1,1),
-            vec3(0,1,-1),
-            vec3(0,1,-1),
-            vec3(0,1,1),
-            vec3(0,-1,-1),
+            vec3(0, -1, -1),
+
+            vec3(0, 0, -1),
+            vec3(0, 1, 0),
+
+            vec3(0, 1, 0),
+            vec3(0, 0, 1),
+
+            vec3(0, 0, 1),
+            vec3(0, 1, 0),
+
+            vec3(0, 1, 0),
+            vec3(0, 0, -1),
+
+            vec3(0, 0, -1),
+            vec3(0, 1, 0),
+
+            vec3(0, 1, 0),
+            vec3(0, 0, 1),
+
+            vec3(0, -1, -1),
+        ];
+        this.baseColors = [
+            this.wallColor,
+
+            this.wallColor,
+            this.wallColor,
+
+            this.wallColor,
+            this.wallColor,
+
+            this.wallColor,
+            this.trackColor,
+
+            this.trackColor,
+            this.wallColor,
+
+            this.wallColor,
+            this.wallColor,
+
+            this.wallColor,
+            this.wallColor,
+
+            this.wallColor,
         ];
         this.pb = [];
         const step = (x) => (x / slices);
         // 8 is the length of this.sliceBase
-        const mapIndex = (slice, index) => (slice % slices) * 8 + (index % 8);
+        const SLICE_LEN = this.sliceBase.length;
+        const mapIndex = (slice, index) => (slice % slices) * SLICE_LEN + (index % SLICE_LEN);
         const pushToPosition = (slice) => {
             const [position, basis] = getFrameFromT(step(slice), curveFunction);
-            this.pb.push([position,basis]);
-        
+            this.pb.push([position, basis]);
+
             const sliceTransform = Mat4.identity();
             sliceTransform.pre_multiply(Mat4.from([
                 [basis[0][0], basis[1][0], basis[2][0], 0],
@@ -151,8 +268,11 @@ export class Track extends Shape {
                 this.arrays.position.push(vec3(v4[0], v4[1], v4[2]));
             }
             for (let newVec3 of this.baseNormals) {
-                let v4 = sliceTransform.times(vec4(newVec3[0], newVec3[1], newVec3[2], 1));
+                let v4 = sliceTransform.times(vec4(newVec3[0], newVec3[1], newVec3[2], 0));
                 this.arrays.normal.push(vec3(v4[0], v4[1], v4[2]));
+            }
+            for (let color of this.baseColors) {
+                this.arrays.color.push(color);
             }
         };
 
@@ -160,7 +280,7 @@ export class Track extends Shape {
         for (let slice = 1; slice <= slices; slice++) {
             if (slice < slices) pushToPosition(slice);
             // build triangles from indices
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < SLICE_LEN; i++) {
                 this.indices.push(
                     mapIndex(slice - 1, i),
                     mapIndex(slice - 1, i + 1),
@@ -170,9 +290,6 @@ export class Track extends Shape {
                     mapIndex(slice, i),
                 );
             }
-        }
-        for (let _ of this.arrays.position) {
-            this.arrays.normal.push(vec3(0.5, 0.5, 0.5));
         }
     }
 }
