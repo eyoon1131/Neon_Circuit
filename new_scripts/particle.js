@@ -5,11 +5,12 @@ import { getFrame, getTimeOnCurve} from "../track/track-generate.js";
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
+const SAFE_EDGE = 0.1;
 function are_colliding(p1, p2) {
     if (p1 === p2)
         return false;
     const dist = p1.pos.minus(p2.pos).norm();
-    return dist <= p1.scale_factors[0] + p2.scale_factors[0];
+    return dist <= p1.scale_factors[0] + p2.scale_factors[0] + SAFE_EDGE;
 }
 
 export class Particle {

@@ -4,7 +4,7 @@ import {defs} from "../main-scene.js";
 // Pull these names into this module's scope for convenience:
 const { Vector3, Vector4, vec3, vec4, color, Matrix, Mat4, Shape, Shader, Component } = tiny;
 
-const TINY_STEP = 1e-6;
+const TINY_STEP = 1e-3;
 const SCAN_POINTS =128.0;
 function _curveDerivative(curveFunction, t) {
     return curveFunction(t + TINY_STEP)
@@ -40,7 +40,7 @@ export function getFrame(position, curveFunction) {
     return [tangent, normal, horizontal, point];
 }
 
-function getFrameFromT(t, curveFunction) {
+export function getFrameFromT(t, curveFunction) {
 
     const point = curveFunction(t);
     //console.log('t = ', t, 'p = ', point);

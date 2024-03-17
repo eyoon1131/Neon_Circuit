@@ -7,7 +7,7 @@ import { detectTrackCollision, trackCollisionDebug } from './collision/collision
 import { StartAnimation, TopBanner, LapAnimation, UI } from "./ui/ui.js";
 import { Scene2Texture } from "./ui/scene2texture.js";
 import { CarShape } from './car/car.js';
-
+import { getFrameFromT } from './track/track-generate.js';
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
@@ -20,6 +20,7 @@ const TRACK_HEIGHT = 0.1;
 const TRACK_WALL_WIDTH = 0.8;
 const TRACK_WALL_HEIGHT = 0.4;
 const TRACK_DIVISIONS = 100;
+const TRACK_LIGHT_NUM = 10;
 
 const NUM_CARS = 4;
 
@@ -69,7 +70,7 @@ export
                 // that a Shader queries to light/color it properly.  Here we use a Phong shader.
                 // We can now tweak the scalar coefficients from the Phong lighting formulas.
                 // Expected values can be found listed in Phong_Shader::update_GPU().
-                const phong = new defs.Phong_Shader();
+                const phong = new defs.Phong_Shader(TRACK_LIGHT_NUM);
                 const tex_phong = new defs.Textured_Phong();
                 this.materials = {};
                 this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1) }
@@ -110,6 +111,7 @@ export
                 ];
                 const hermiteFunction = this.curve_fn =
                     HermiteFactory(hermiteCurvePoints, hermiteCurveTangents);
+
                 this.shapes.track = new Track(
                     TRACK_WIDTH,
                     TRACK_WALL_WIDTH,
@@ -187,44 +189,51 @@ export
             }
 
             render_animation(caller) {
+                this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
                 // display():  Called once per frame of animation.  We'll isolate out
                 // the code that actually draws things into Part_one_hermite, a
                 // subclass of this Scene.  Here, the base class's display only does
                 // some initial setup.
                 // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
-                if (!caller.controls) {
-                    //this.animated_children.push(caller.controls = new defs.Movement_Controls({ uniforms: this.uniforms }));
-                    //caller.controls.add_mouse_controls(caller.canvas);
+                // if (!caller.controls) {
+                //     //this.animated_children.push(caller.controls = new defs.Movement_Controls({ uniforms: this.uniforms }));
+                //     //caller.controls.add_mouse_controls(caller.canvas);
 
-                    // Define the global camera and projection matrices, which are stored in shared_uniforms.  The camera
-                    // matrix follows the usual format for transforms, but with opposite values (cameras exist as
-                    // inverted matrices).  The projection matrix follows an unusual format and determines how depth is
-                    // treated when projecting 3D points onto a plane.  The Mat4 functions perspective() or
-                    // orthographic() automatically generate valid matrices for one.  The input arguments of
-                    // perspective() are field of view, aspect ratio, and distances to the near plane and far plane.
+                //     // Define the global camera and projection matrices, which are stored in shared_uniforms.  The camera
+                //     // matrix follows the usual format for transforms, but with opposite values (cameras exist as
+                //     // inverted matrices).  The projection matrix follows an unusual format and determines how depth is
+                //     // treated when projecting 3D points onto a plane.  The Mat4 functions perspective() or
+                //     // orthographic() automatically generate valid matrices for one.  The input arguments of
+                //     // perspective() are field of view, aspect ratio, and distances to the near plane and far plane.
 
-                    // // !!! Camera changed here
-                    const car = this.simulation.particles[0];
-                    const at = car.pos;
-                    //const eye = at.minus(car.forward_dir)
-                    const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
-                    Shader.assign_camera(Mat4.look_at(
-                        at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
-                }
-                this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
+                //     // // !!! Camera changed here
+                //     const car = this.simulation.particles[0];
+                //     const at = car.pos;
+                //     //const eye = at.minus(car.forward_dir)
+                //     const eye_to_at = car.forward_dir.times(10).plus(vec3(0, -5, 0));
+                //     Shader.assign_camera(Mat4.look_at(
+                //         at.minus(eye_to_at), at, vec3(0, 1, 0)), this.uniforms);
+                // }
+
 
                 // *** Lights: *** Values of vector or point lights.  They'll be consulted by
                 // the shader when coloring shapes.  See Light's class definition for inputs.
                 const t = this.t = this.uniforms.animation_time / 1000;
                 const angle = Math.sin(t);
 
+
                 // const light_position = Mat4.rotation( angle,   1,0,0 ).times( vec4( 0,-1,1,0 ) ); !!!
                 // !!! Light changed here
-                const light_position = vec4(20 * Math.cos(angle), 20, 20 * Math.sin(angle), 1.0);
-                this.uniforms.lights = [defs.Phong_Shader.light_source(light_position, color(1, 1, 1, 1), 1000000)];
+                // const light_position = vec4(20 * Math.cos(angle), 20, 20 * Math.sin(angle), 1.0);
+                // this.uniforms.lights = [
+                //     defs.Phong_Shader.light_source(light_position, color(1, 1, 1, 1), 1000000),
+
+                // ];
+
+                
 
                 // draw axis arrows.
-                this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
+                // this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
 
                 //this.curve = new Curve_Shape(this.spline.get_position(t), 1000);
 
@@ -271,23 +280,23 @@ export class game_world extends game_world_base {                               
 
         /**** UI setup *****/
         Scene2Texture.draw(caller, this.uniforms);
-        if (!this.start_animation.started){
+        if (!this.start_animation.started) {
             this.start_animation.start()
         }
         this.start_animation.time_now = t_step;
-        if (t_step > START_ANIMATION_LENGTH){
+        if (t_step > START_ANIMATION_LENGTH) {
             this.start_animation.end()
         }
-        
-        if (this.simulation.particles[0].laps > this.laps_completed){
+
+        if (this.simulation.particles[0].laps > this.laps_completed) {
             console.log("lap completed")
             this.lap_animation.start();
             this.laps_completed = this.simulation.particles[0].laps;
         }
 
-        if (t_step > 3){
+        if (t_step > 3) {
             this.simulation.race_start = true;
-            this.top_banner.update_time(t_step-3);
+            this.top_banner.update_time(t_step - 3);
         }
 
 
@@ -333,7 +342,6 @@ export class game_world extends game_world_base {                               
                 ));
             }
             model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
-
             //this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: p.color });
             this.shapes.cars[++i].draw(caller, this.uniforms, model_transform);
         }
@@ -345,17 +353,30 @@ export class game_world extends game_world_base {                               
             model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
             this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: red });
         }
-        for (let [p, bs] of this.shapes.track.pb) {
-            let model_transform = Mat4.scale(0.1, 0.1, 0.1);
-            model_transform.pre_multiply(Mat4.from([
-                [bs[0][0], bs[1][0], bs[2][0], 0],
-                [bs[0][1], bs[1][1], bs[2][1], 0],
-                [bs[0][2], bs[1][2], bs[2][2], 0],
-                [0, 0, 0, 1],
-            ]));
-            model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
-            this.shapes.axis.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: color(0, 1, 0, 1) });
+        // for (let [p, bs] of this.shapes.track.pb) {
+        //     let model_transform = Mat4.scale(0.1, 0.1, 0.1);
+        //     model_transform.pre_multiply(Mat4.from([
+        //         [bs[0][0], bs[1][0], bs[2][0], 0],
+        //         [bs[0][1], bs[1][1], bs[2][1], 0],
+        //         [bs[0][2], bs[1][2], bs[2][2], 0],
+        //         [0, 0, 0, 1],
+        //     ]));
+        //     model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
+        //     this.shapes.axis.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: color(0, 1, 0, 1) });
+        // }
+        // FIAX LUX!
+         
+        this.uniforms.lights = [];
+        for(let i = 0; i < TRACK_LIGHT_NUM; i++) {
+            let [p,[forward, up, tan]] = getFrameFromT(parseFloat(i)/TRACK_LIGHT_NUM, this.curve_fn);
+            p[1] += 15;
+            p.add_by(tan.normalized().times(TRACK_WIDTH/2));
+            // let model_transform = Mat4.scale(0.1, 0.1, 0.1);
+            // model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
+            // this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: color(1,1,0,1) });
+            this.uniforms.lights.push(defs.Phong_Shader.light_source(p.to4(1), color(1, 1, 1, 1), 100));
         }
+
 
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
