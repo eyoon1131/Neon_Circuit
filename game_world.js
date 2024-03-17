@@ -1,5 +1,5 @@
 import { defs, tiny } from './examples/common.js';
-import { Curve, HermiteFactory, Track } from './track/track-generate.js';
+import { Curve, HermiteFactory, Track, TrackPhong } from './track/track-generate.js';
 import { Car, Enemy } from './new_scripts/particle.js';
 import { Simulation } from './new_scripts/simulation.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
@@ -20,7 +20,7 @@ const TRACK_HEIGHT = 0.1;
 const TRACK_WALL_WIDTH = 0.8;
 const TRACK_WALL_HEIGHT = 0.4;
 const TRACK_DIVISIONS = 100;
-const TRACK_LIGHT_NUM = 10;
+const TRACK_LIGHT_NUM = 5;
 
 const NUM_CARS = 4;
 
@@ -71,8 +71,10 @@ export
                 // We can now tweak the scalar coefficients from the Phong lighting formulas.
                 // Expected values can be found listed in Phong_Shader::update_GPU().
                 const phong = new defs.Phong_Shader(TRACK_LIGHT_NUM);
-                const tex_phong = new defs.Textured_Phong();
+                const tex_phong = new defs.Textured_Phong(TRACK_LIGHT_NUM);
+                const trackPhong = new TrackPhong(TRACK_LIGHT_NUM);
                 this.materials = {};
+                this.materials.track = {shader: trackPhong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1)}
                 this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color(.9, .5, .9, 1) }
                 this.materials.metal = { shader: phong, ambient: .2, diffusivity: 1, specularity: 1, color: color(.9, .5, .9, 1) }
                 this.materials.rgb = { shader: tex_phong, ambient: .5, texture: new Texture("assets/rgb.jpg") }
@@ -118,7 +120,9 @@ export
                     TRACK_WALL_HEIGHT,
                     TRACK_HEIGHT,
                     hermiteFunction,
-                    TRACK_DIVISIONS
+                    TRACK_DIVISIONS,
+                    color(0.2,0.2,0.2,1),
+                    color(1,0,0,1)
                 );
                 this.simulation.finish_line = hermiteCurvePoints[0];
                 this.simulation.finish_line_slope = hermiteCurvePoints[0][0] / hermiteCurvePoints[0][2];
@@ -360,12 +364,12 @@ export class game_world extends game_world_base {                               
         }
 
         // render the track with some debug info
-        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(1, 1, 1, 1) });
-        for (let p of this.shapes.track.arrays.position) {
-            let model_transform = Mat4.scale(0.05, 0.05, 0.05);
-            model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
-            this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: red });
-        }
+        this.shapes.track.draw(caller, this.uniforms, Mat4.identity(), this.materials.track);
+        // for (let p of this.shapes.track.arrays.position) {
+        //     let model_transform = Mat4.scale(0.05, 0.05, 0.05);
+        //     model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
+        //     this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: red });
+        // }
         // for (let [p, bs] of this.shapes.track.pb) {
         //     let model_transform = Mat4.scale(0.1, 0.1, 0.1);
         //     model_transform.pre_multiply(Mat4.from([
@@ -382,12 +386,12 @@ export class game_world extends game_world_base {                               
         this.uniforms.lights = [];
         for(let i = 0; i < TRACK_LIGHT_NUM; i++) {
             let [p,[forward, up, tan]] = getFrameFromT(parseFloat(i)/TRACK_LIGHT_NUM, this.curve_fn);
-            p[1] += 15;
-            p.add_by(tan.normalized().times(TRACK_WIDTH/2));
+            p[1] += 10;
+            //p.add_by(tan.normalized().times(TRACK_WIDTH/2));
             // let model_transform = Mat4.scale(0.1, 0.1, 0.1);
             // model_transform.pre_multiply(Mat4.translation(p[0], p[1], p[2]));
             // this.shapes.ball.draw(caller, this.uniforms, model_transform, { ...this.materials.plastic, color: color(1,1,0,1) });
-            this.uniforms.lights.push(defs.Phong_Shader.light_source(p.to4(1), color(1, 1, 1, 1), 100));
+            this.uniforms.lights.push(defs.Phong_Shader.light_source(p.to4(1), color(1, 1, 1, 1), 128));
         }
 
 
