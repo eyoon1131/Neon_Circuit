@@ -4,7 +4,7 @@ import { Car, Enemy } from './new_scripts/particle.js';
 import { Simulation } from './new_scripts/simulation.js';
 import { detectTrackCollision, trackCollisionDebug } from './collision/collision-handling.js';
 
-import { StartAnimation, TopBanner, LapAnimation, UI } from "./ui/ui.js";
+import { StartAnimation, TopBanner, LapAnimation, UI, Leaderboard } from "./ui/ui.js";
 import { Scene2Texture } from "./ui/scene2texture.js";
 import { CarShape } from './car/car.js';
 import { getFrameFromT } from './track/track-generate.js';
@@ -38,11 +38,11 @@ function get_start_offset(i) {
 
 export
     const game_world_base = defs.game_world_base =
-        class game_world_base extends Component {                                          // **My_Demo_Base** is a Scene that can be added to any display canvas.
+        class game_world_base extends Component {                                          // **My_Demo_Base** is a Scene that can be added to any draw canvas.
             // This particular scene is broken up into two pieces for easier understanding.
             // The piece here is the base class, which sets up the machinery to draw a simple
             // scene demonstrating a few concepts.  A subclass of it, Part_one_hermite,
-            // exposes only the display() method, which actually places and draws the shapes,
+            // exposes only the draw() method, which actually places and draws the shapes,
             // isolating that code so it can be experimented with on its own.
             init() {
                 console.log("init")
@@ -52,7 +52,7 @@ export
                 // At the beginning of our program, load one of each of these shape
                 // definitions onto the GPU.  NOTE:  Only do this ONCE per shape it
                 // would be redundant to tell it again.  You should just re-use the
-                // one called "box" more than once in display() to draw multiple cubes.
+                // one called "box" more than once in draw() to draw multiple cubes.
                 // Don't define more than one blueprint for the same thing here.
                 this.shapes = {
                     'box': new defs.Cube(),
@@ -85,7 +85,7 @@ export
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
-                this.simulation.lap_goal = 5;
+                this.simulation.lap_goal = 3;
                 // collision handling
                 this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH - TRACK_WALL_WIDTH / 2, 2 * car.scale_factors[0]));
 
@@ -144,11 +144,13 @@ export
                 this.shapes.curves = [];
 
                 // ui
+                this.laps_completed = 0;
+
                 this.start_animation = new StartAnimation();
                 this.lap_animation = new LapAnimation();
-                this.laps_completed = 0;
                 this.top_banner = new TopBanner();
-                this.ui = [this.top_banner, this.start_animation, this.lap_animation];
+                this.leaderboard = new Leaderboard();
+                this.ui = [this.top_banner, this.start_animation, this.lap_animation, this.leaderboard];
                 for (let i = 1; i < NUM_CARS; i++) {
                     const enemyPathPoints = [
                         //hermiteCurvePoints[0].plus(vec3((i - 1) * 0.3 * TRACK_WIDTH , 0, (i - 1) * 0.3 * TRACK_WIDTH)),
@@ -192,7 +194,7 @@ export
                 this.uniforms.projection_transform = Mat4.perspective(Math.PI / 4, caller.width / caller.height, 1, 100);
                 // display():  Called once per frame of animation.  We'll isolate out
                 // the code that actually draws things into Part_one_hermite, a
-                // subclass of this Scene.  Here, the base class's display only does
+                // subclass of this Scene.  Here, the base class's draw only does
                 // some initial setup.
                 // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
                 // if (!caller.controls) {
@@ -241,14 +243,14 @@ export
         }
 
 
-export class game_world extends game_world_base {                                                    // **Part_one_hermite** is a Scene object that can be added to any display canvas.
+export class game_world extends game_world_base {                                                    // **Part_one_hermite** is a Scene object that can be added to any draw canvas.
     // This particular scene is broken up into two pieces for easier understanding.
     // See the other piece, My_Demo_Base, if you need to see the setup code.
-    // The piece here exposes only the display() method, which actually places and draws
+    // The piece here exposes only the draw() method, which actually places and draws
     // the shapes.  We isolate that code so it can be experimented with on its own.
     // This gives you a very small code sandbox for editing a simple scene, and for
     // experimenting with matrix transformations.
-    render_animation(caller) {                                                // display():  Called once per frame of animation.  For each shape that you want to
+    render_animation(caller) {                                                // draw():  Called once per frame of animation.  For each shape that you want to
         // appear onscreen, place a .draw() call for it inside.  Each time, pass in a
         // different matrix value to control where the shape appears.
 
@@ -287,11 +289,22 @@ export class game_world extends game_world_base {                               
         if (t_step > START_ANIMATION_LENGTH) {
             this.start_animation.end()
         }
-
-        if (this.simulation.particles[0].laps > this.laps_completed) {
+        
+        if (this.simulation.particles[0].laps > this.laps_completed){
+            const cur_lap = this.simulation.particles[0].laps;
             console.log("lap completed")
+            if (cur_lap === this.simulation.lap_goal)
+                this.lap_animation.final_lap(this.simulation.leaderboard);
+            else 
+                this.lap_animation.update( cur_lap, this.simulation.lap_goal )
+
             this.lap_animation.start();
-            this.laps_completed = this.simulation.particles[0].laps;
+            this.laps_completed = cur_lap;
+        }
+
+        if (this.simulation.lap_goal === this.laps_completed){
+            console.log("Game end!", this.simulation.leaderboard);
+            this.leaderboard.update(this.simulation.leaderboard);
         }
 
         if (t_step > 3) {
@@ -381,7 +394,8 @@ export class game_world extends game_world_base {                               
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
         for (const i in this.ui) {
-            this.ui[i].display(caller, this.uniforms);
+            console.log(this.ui[i])
+            this.ui[i].draw(caller, this.uniforms);
         }
         // end ui
 

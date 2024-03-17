@@ -24,50 +24,50 @@ export class Scene2Texture {
      * It will draw all registered scene drawers and clean up the GPU buffer afterwards.
      * The drew scene will be updated to scene drawer's texture.
      */
-    static draw(context, program_state) {
+    static draw(caller, uniforms) {
         // Skip first frame
         if (!this.skip) {
             this.skip = true;
             return;
         }
 
-        const aspect_ratio = context.width / context.height;
-        const width_backup = context.width;
-        const height_backup = context.height;
+        const aspect_ratio = caller.width / caller.height;
+        const width_backup = caller.width;
+        const height_backup = caller.height;
 
         // Backup camera matrix, projection matrix, and light
-        const cam_matrix_backup = program_state.camera_inverse;
-        const proj_matrix_backup = program_state.projection_transform;
-        const light_backup = program_state.lights;
+        const cam_matrix_backup = uniforms.camera_inverse;
+        const proj_matrix_backup = uniforms.projection_transform;
+        const light_backup = uniforms.lights;
 
         for (let scene_drawer of Scene2Texture.scene_drawers) {
             // Set the aspect ratio temporarily
-            context.width = scene_drawer.width;
-            context.height = scene_drawer.height;
+            caller.width = scene_drawer.width;
+            caller.height = scene_drawer.height;
 
             // Draw the scene
-            scene_drawer.display_fn(context, program_state);
+            scene_drawer.display_fn(caller, uniforms);
 
             // Restore the aspect ratio
-            context.width = width_backup;
-            context.height = height_backup;
+            caller.width = width_backup;
+            caller.height = height_backup;
 
             // Generate image
-            // scene_drawer.scratchpad_context.drawImage(context.canvas, 0, 0, scene_drawer.width, scene_drawer.height / aspect_ratio);
-            scene_drawer.scratchpad_context.drawImage(context.canvas, 0, 0, scene_drawer.width, scene_drawer.height);
+            // scene_drawer.scratchpad_caller.drawImage(caller.canvas, 0, 0, scene_drawer.width, scene_drawer.height / aspect_ratio);
+            scene_drawer.scratchpad_caller.drawImage(caller.canvas, 0, 0, scene_drawer.width, scene_drawer.height);
             scene_drawer.texture.image.src = scene_drawer.scratchpad.toDataURL("image/png");
 
             // Copy onto GPU
             if (scene_drawer.skip_first) {
-                scene_drawer.texture.copy_onto_graphics_card(context.context, false);
+                scene_drawer.texture.copy_onto_graphics_card(caller.context, false);
             }
             scene_drawer.skip_first = true;
 
             // Cleanup
-            context.context.clear(context.context.COLOR_BUFFER_BIT | context.context.DEPTH_BUFFER_BIT);
-            program_state.camera_inverse = cam_matrix_backup;
-            program_state.projection_transform = proj_matrix_backup;
-            // program_state.lights = light_backup;
+            caller.context.clear(caller.context.COLOR_BUFFER_BIT | caller.context.DEPTH_BUFFER_BIT);
+            uniforms.camera_inverse = cam_matrix_backup;
+            uniforms.projection_transform = proj_matrix_backup;
+            // uniforms.lights = light_backup;
         }
     }
 }
@@ -91,7 +91,7 @@ export class SceneDrawer {
         canvas.height = height;
 
         this.scratchpad = canvas;
-        this.scratchpad_context = canvas.getContext("2d");
+        this.scratchpad_caller = canvas.getcaller("2d");
         this.texture = new Texture("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
     }
 }

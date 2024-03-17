@@ -24,14 +24,20 @@ function formatTime(seconds) {
 }
 
 /** 
- * padd number with spaces so output string is fixed len.
- @param {Integer} num input number
- @param {Integer} digits
+* @param {Integer} num input number
+* @param {Integer} digits
+* @returns padd number with spaces so output string is fixed len.
 */
 function format(num, digits) {
     var str = num.toString();
     return ' '.repeat(digits - str.length) + str;
 }
+
+function format_leaderboard_entry(entry) {
+    return `${entry[0]}: ${formatTime(entry[1])}`;
+}
+
+
 
 /**
  * UI is the base class for all 2D UI elements.
@@ -45,7 +51,7 @@ export class UI {
         this.projection_inverse = Mat4.identity();
     }
     /**
-     * Update camera transform. Must be called before display each time the camera is moved.
+     * Update camera transform. Must be called before draw each time the camera is moved.
      * @param look_at The current camera transform of the scene.
      */
     static update_camera(look_at) {
@@ -77,8 +83,8 @@ export class UI {
         return transform;
     }
 
-    display(context, program_state) {
-        this.projection_inverse = Mat4.inverse(program_state.projection_transform);
+    draw(caller, uniforms) {
+        this.projection_inverse = Mat4.inverse(uniforms.projection_transform);
     }
 }
 
@@ -153,30 +159,116 @@ export class TopBanner extends UI {
         this._enabled = false;
     }
 
-    display(context, program_state) {
-        super.display(context, program_state);
+    draw(caller, uniforms) {
+        super.draw(caller, uniforms);
 
         if (!this._enabled) return;
 
         // Draw background.
         const bg_transform = super.get_transform(0, 1.13, 1, 0.3);
         bg_transform.post_multiply(Mat4.translation(0, 0, 0.01));
-        this.shapes.square.draw(context, program_state, bg_transform, this.materials.background_fade);
+        this.shapes.square.draw(caller, uniforms, bg_transform, this.materials.background_fade);
 
         // Draw text.
         this.text.text = `Untitled Marble Racer`;
-        this.text.display(context, program_state);
+        this.text.draw(caller, uniforms);
 
-        this.laps_completed.text = `Laps Completed: ${format(context.laps_completed, 3)}`;
-        this.laps_completed.display(context, program_state);
+        this.laps_completed.text = `Laps Completed: ${format(caller.laps_completed, 3)}`;
+        this.laps_completed.draw(caller, uniforms);
 
-        this.time_text1.display(context, program_state);
+        this.time_text1.draw(caller, uniforms);
 
         this.time_text.text = formatTime(this.race_time)
-        this.time_text.display(context, program_state);
+        this.time_text.draw(caller, uniforms);
 
 
     }
+}
+
+export class Leaderboard extends UI {
+    constructor(num_entries = 4) {
+        super();
+
+        const LEADERBOARD_HOFFSET = 0.7;
+        const LEADERBOARD_VOFFSET = 0.6;
+        const background_color = color(0.15, 0.22, 0.28, 0.8);
+        const background_fade_color = color(0.27, 0.27, 0.3, 0.6);
+        const text_color = color(1, 1, 1, 1);
+        const text_border_color = color(0.15, 0.29, 0.35, 1);
+
+        this.shapes = {
+            square: new defs.Square(),
+        };
+
+        this.materials = {
+            background_fade: {
+                shader: new FadeShader(background_fade_color, 0.5, 0.8), 
+                ambient: 1,
+                diffusivity: 0,
+                specularity: 0,
+                color: background_color,
+            },
+            background: {
+                shader: new defs.Phong_Shader(), 
+                ambient: 1,
+                diffusivity: 0,
+                specularity: 0,
+                color: background_color,
+            }
+        };
+
+        this.text = new TextLine('Leaderboard', "blomberg", text_color, text_border_color);
+        this.text.set_position(LEADERBOARD_HOFFSET, LEADERBOARD_VOFFSET, 0.0015);
+        this.text.set_extra_space(2.5);
+
+        this.num_entries = num_entries;
+        this.leaderboard_stats = [];
+        for (let i = 0; i < num_entries; i++) {
+            this.leaderboard_stats.push(new TextLine(' '.repeat(12), "roboto-regular", text_color, text_border_color));
+            this.leaderboard_stats[i].set_position(LEADERBOARD_HOFFSET, LEADERBOARD_VOFFSET - 0.2 - 0.1 * i, 0.001);
+            this.leaderboard_stats[i].set_extra_space(2.5);
+        }
+
+        this._enabled = true;
+    }
+
+    enable() {
+        this._enabled = true;
+    }
+
+    disable() {
+        this._enabled = false;
+    }
+
+    update(leaderboard_stats) {
+        for (let i = 0; i < this.num_entries; i++) {
+            if (i < leaderboard_stats.length) {
+                this.leaderboard_stats[i].text = format_leaderboard_entry(leaderboard_stats[i]);
+            } else {
+                this.leaderboard_stats[i].text = ' '.repeat(12);
+            }
+        }
+    }
+
+    draw(caller, uniforms) {
+        super.draw(caller, uniforms);
+
+        if (!this._enabled) return;
+
+        // // Draw background.
+        // const bg_transform = super.get_transform(0, 0.9, 1, 0.3);
+        // bg_transform.post_multiply(Mat4.translation(0, 0, 0.01));
+        // this.shapes.square.draw(caller, uniforms, bg_transform, this.materials.background_fade);
+
+        // Draw text.
+        this.text.draw(caller, uniforms);
+        for (let i = 0; i < this.num_entries; i++) {
+            this.leaderboard_stats[i].draw(caller, uniforms);
+        }
+    }
+
+
+
 }
 
 /**
@@ -199,9 +291,9 @@ export class UIAnimation extends UI {
         this.started = false;
     }
 
-    display(context, program_state) {
-        super.display(context, program_state);
-        this.time_now = program_state.animation_time / 1000;
+    draw(caller, uniforms) {
+        super.draw(caller, uniforms);
+        this.time_now = uniforms.animation_time / 1000;
     }
 }
 
@@ -215,14 +307,14 @@ export class StartAnimation extends UIAnimation {
         this.text = new TextLine(' 3 ', 'gentleman', YELLOW, color(1, 1, 1, 1));
     }
 
-    display(context, program_state) {
-        super.display(context, program_state);
+    draw(caller, uniforms) {
+        super.draw(caller, uniforms);
         // console.log(this.time_now)
 
         if (!this.started) return;
 
         const dt = this.time_now - this.start_time;
-        // console.log("Race start display", dt)
+        // console.log("Race start draw", dt)
 
         const ease_func = (x) => 1.5 * Math.pow(2, -5 * x) + 0.5;
 
@@ -246,7 +338,7 @@ export class StartAnimation extends UIAnimation {
         }
 
         this.text.set_position(0, 0.25, 0.005 * scale);
-        this.text.display(context, program_state);
+        this.text.draw(caller, uniforms);
     }
 }
 
@@ -268,12 +360,38 @@ export class LapAnimation extends UIAnimation {
         this.ended = false;
     }
 
-    display(context, program_state) {
-        super.display(context, program_state);
+    final_lap(leaderboard_stats) {
+        let i = 0;
+        for (const entry of leaderboard_stats) {
+            if (entry[0] === 1) {
+                switch(i) {
+                    case 0:
+                        this.text.text = "1st Place!";
+                        break;
+                    case 1:
+                        this.text.text = "2nd Place!";
+                        break;
+                    case 2:
+                        this.text.text = "3rd Place!";
+                        break;
+                    default:
+                        this.text.text = `${i+1}th Place!`;
+                }
+            }
+            i++;
+        }
+    }
+
+    update(lap_number, goal_laps) {
+        this.text.text = `Lap ${lap_number}/ ${goal_laps} !`;
+    }
+
+    draw(caller, uniforms) {
+        super.draw(caller, uniforms);
         if (!this.started) return;
 
         const t = this.time_now - this.start_time;
-        console.log("Lap display", t)
+        console.log("Lap draw", t)
 
         // Helper functions
         const prefix_sum = (arr, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0);
@@ -339,23 +457,23 @@ export class LapAnimation extends UIAnimation {
         const text = this.text;
         text.set_alpha(alpha);
         text.set_position(text_pos, 0.08, 0.002);
-        text.display(context, program_state);
+        text.draw(caller, uniforms);
 
         let tr = super.get_transform(upper_banners_pos, 0.18, 1.2, .06);
-        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
+        this.parallelogram.draw(caller, uniforms, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
         tr = super.get_transform(lower_banners_pos, -0.18, 1.2, .06);
-        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
+        this.parallelogram.draw(caller, uniforms, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
         tr = super.get_transform(0, 0, 1.2, .12);
-        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: color(1, 1, 1, alpha)});
+        this.parallelogram.draw(caller, uniforms, tr, {...this.bg_material, color: color(1, 1, 1, alpha)});
     }
 }
 
 /**
- * TextLine is a wrapper for TextShape object for displaying 2d text on the screen.
+ * TextLine is a wrapper for TextShape object for drawing 2d text on the screen.
  */
 export class TextLine extends UI {
     /**
-     * @param text -- The text to display
+     * @param text -- The text to draw
      * @param font -- The name of the font. "font.json" and "font.png" must be in the assets/fonts folder.
      * @param text_color -- The color of the text
      * @param background_color -- The color of the background
@@ -429,24 +547,24 @@ export class TextLine extends UI {
     /**
      * Call this function per frame.
      */
-    display(context, program_state) {
-        super.display(context, program_state);
+    draw(caller, uniforms) {
+        super.draw(caller, uniforms);
 
         // Skip if any of the required data is not loaded or given yet
         if (this.x === undefined || this.y === undefined || this.size === undefined || !this.text_shape) return;
 
-        this.text_shape.set_string(this.text, context.context, this.extra_space);
+        this.text_shape.set_string(this.text, caller.context, this.extra_space);
 
-        const aspect_ratio = context.width / context.height;
+        const aspect_ratio = caller.width / caller.height;
         let left_shift = this.text_shape.text_width / 2 * this.size;
         const transform = super.get_transform(this.x - left_shift, this.y, this.size, this.size * aspect_ratio);
 
-        this.text_shape.draw(context, program_state, transform, {...this.text_texture, color: this.color});
+        this.text_shape.draw(caller, uniforms, transform, {...this.text_texture, color: this.color});
     }
 }
 
 /**
- * TestShape is a 2d shape object that can display texts with various fonts.
+ * TestShape is a 2d shape object that can draw texts with various fonts.
  */
 class TextShape extends Shape {
     /**
@@ -466,12 +584,12 @@ class TextShape extends Shape {
     }
 
     /**
-     * Set the string to be displayed.
-     * @param string -- The string to be displayed.
-     * @param context -- The canvas context.
+     * Set the string to be drawed.
+     * @param string -- The string to be drawed.
+     * @param caller -- The canvas caller.
      * @param extra_space -- The extra space between characters.
      */
-    set_string(string, context, extra_space = 0) {
+    set_string(string, caller, extra_space = 0) {
         // Only update if the string is different.
         if (string === this.string) return;
         this.string = string;
@@ -536,7 +654,7 @@ class TextShape extends Shape {
                 [left, 1 - top], [right, 1 - top]));
         }
 
-        this.copy_onto_graphics_card(context);
+        this.copy_onto_graphics_card(caller);
     }
 
     /**
@@ -602,11 +720,11 @@ class SdfFontShader extends defs.Textured_Phong {
                   } `;
     }
 
-    update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
-        super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
+    update_GPU(caller, gpu_addresses, gpu_state, model_transform, material) {
+        super.update_GPU(caller, gpu_addresses, gpu_state, model_transform, material);
 
         // Send bg_color to GPU
-        context.uniform4fv(gpu_addresses.bg_color, this.bg_color);
+        caller.uniform4fv(gpu_addresses.bg_color, this.bg_color);
     }
 }
 
@@ -658,22 +776,22 @@ class FadeShader extends Shader {
             }`;
     }
 
-    update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
-        super.update_GPU(context, gpu_addresses, gpu_state, model_transform, material);
+    update_GPU(caller, gpu_addresses, gpu_state, model_transform, material) {
+        super.update_GPU(caller, gpu_addresses, gpu_state, model_transform, material);
 
         // Send info to GPU
-        context.uniform1f(gpu_addresses.pos_percent, this.pos_percent);
-        context.uniform1f(gpu_addresses.max_percent, this.max_percent);
+        caller.uniform1f(gpu_addresses.pos_percent, this.pos_percent);
+        caller.uniform1f(gpu_addresses.max_percent, this.max_percent);
 
         // Send proj_cam matrix
         const [P, C, M] = [gpu_state.projection_transform, gpu_state.camera_inverse, model_transform],
             PCM = P.times(C).times(M);
-        context.uniformMatrix4fv(gpu_addresses.model_transform, false, Matrix.flatten_2D_to_1D(model_transform.transposed()));
-        context.uniformMatrix4fv(gpu_addresses.projection_camera_model_transform, false,
+        caller.uniformMatrix4fv(gpu_addresses.model_transform, false, Matrix.flatten_2D_to_1D(model_transform.transposed()));
+        caller.uniformMatrix4fv(gpu_addresses.projection_camera_model_transform, false,
             Matrix.flatten_2D_to_1D(PCM.transposed()));
 
         // Send color
-        context.uniform4fv(gpu_addresses.shape_color, material.color);
-        context.uniform4fv(gpu_addresses.mix_color, this.mix_color);
+        caller.uniform4fv(gpu_addresses.shape_color, material.color);
+        caller.uniform4fv(gpu_addresses.mix_color, this.mix_color);
     }
 }
