@@ -74,6 +74,13 @@ Since the track can have multiple bumps, bisection won't work.
 
 A simple implementation can be scanning through $[0,1]$ with $n$ discrete points, and then return the point with smallest distance. The quality entirely depends on how many scan-points we have. However, with too few scan points, the quality can be concerning (a poorly estimated point can give strange forces); with too many scan points, the smoothness of the game can be impacted, since this is computed every physics update frame. Due to this issue, we must find a way to optimize.
 
+To further boost the speed for this process (benchmarking shows that `getFrame` causes a lot of lag), we designed a `pHash` function to cache the results into memory.
+This saves a lot of computations and exchanged memory usage for framerate (which is more important in a car racing game). This adds about an additional 150MB usage for a typical 5-lap game.
+
+### Track Models
+
+For rendering out the track, we used a custom model with a custom shader to allow phong lighting with colors. It's completely procedural, meaning that any hermite spline can be used to automatically generate the track.
+
 ## UI
 
 ### Rendering the basic UI
