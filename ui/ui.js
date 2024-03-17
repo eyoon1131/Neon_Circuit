@@ -5,6 +5,8 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
 
+const YELLOW = color(1, 0.7, 0.2, 1);
+
 function formatTime(seconds) {
     var minutes = Math.floor(seconds / 60);
     var remainingSeconds = Math.floor(seconds % 60);
@@ -16,6 +18,16 @@ function formatTime(seconds) {
     milliseconds = milliseconds < 10 ? '00' + milliseconds : (milliseconds < 100 ? '0' + milliseconds : milliseconds);
     
     return `${minutes}:${remainingSeconds}:${milliseconds}`;
+}
+
+/** 
+ * padd number with spaces so output string is fixed len.
+ @param {Integer} num input number
+ @param {Integer} digits
+*/
+function format(num, digits) {
+    var str = num.toString();
+    return ' '.repeat(digits - str.length) + str;
 }
 
 /**
@@ -152,7 +164,7 @@ export class TopBanner extends UI {
         this.text.text = `Untitled Marble Racer`;
         this.text.display(context, program_state);
 
-        this.laps_completed.text = `Laps Completed: ${context.laps_completed}`;
+        this.laps_completed.text = `Laps Completed: ${format(context.laps_completed, 3)}`;
         this.laps_completed.display(context, program_state);
 
         this.time_text1.display(context, program_state);
@@ -176,7 +188,7 @@ export class UIAnimation extends UI {
     }
 
     start() {
-        // this.start_time = this.time_now;
+        this.start_time = this.time_now ? this.time_now : 0;
         this.started = true;
     }
 
@@ -192,18 +204,18 @@ export class UIAnimation extends UI {
 
 
 /**
- * Animates "Game!" text when game ends
+ * Animates the start of race
  */
 export class GameAnimation extends UIAnimation {
     constructor() {
         super();
-        this.text = new TextLine(' 3 ', 'gentleman', color(1, 0.7, 0.2, 1), color(1, 1, 1, 1));
+        this.text = new TextLine(' 3 ', 'gentleman', YELLOW, color(1, 1, 1, 1));
     }
 
 
     display(context, program_state) {
         super.display(context, program_state);
-        console.log(this.time_now)
+        // console.log(this.time_now)
 
         if (!this.started) return;
 
@@ -236,22 +248,17 @@ export class GameAnimation extends UIAnimation {
     }
 }
 
-/**
- * Animate "Red/Blue's Turn" text in each turn
- */
-export class TurnAnimation extends UIAnimation {
+export class LapAnimation extends UIAnimation {
     constructor() {
         super();
 
         const font = "roboto-blackItalic";
 
-        this.text_p1 = new TextLine("Red's Turn", font, color(1, 0.3, 0.4, 1), color(1, 1, 1, 1));
-        this.text_p1.set_extra_space(0.5);
-        this.text_p2 = new TextLine("Blue's Turn", font, color(0.3, 0.6, 1, 1), color(1, 1, 1, 1));
-        this.text_p2.set_extra_space(0.5);
+        this.text = new TextLine("Lap!", font, YELLOW, color(1, 1, 1, 1));
+        this.text.set_extra_space(0.5);
 
         this.parallelogram = new defs.Parallelogram(0.01);
-    this.bg_material = {shader: new defs.Phong_Shader(), 
+        this.bg_material = {shader: new defs.Phong_Shader(), 
             ambient: 1,
             color: color(1,1,1,1)
         };
@@ -264,6 +271,7 @@ export class TurnAnimation extends UIAnimation {
         if (!this.started) return;
 
         const t = this.time_now - this.start_time;
+        console.log("Lap display", t)
 
         // Helper functions
         const prefix_sum = (arr, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0);
@@ -326,15 +334,15 @@ export class TurnAnimation extends UIAnimation {
             return;
         }
 
-        const text = UI.player === 0 ? this.text_p1 : this.text_p2;
+        const text = this.text;
         text.set_alpha(alpha);
         text.set_position(text_pos, 0.08, 0.002);
         text.display(context, program_state);
 
         let tr = super.get_transform(upper_banners_pos, 0.18, 1.2, .06);
-        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: UI.player === 0 ? color(1, 0.1, 0, 1) : color(0, 0.4, 1, 1)});
+        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
         tr = super.get_transform(lower_banners_pos, -0.18, 1.2, .06);
-        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: UI.player === 0 ? color(1, 0.1, 0, 1) :  color(0, 0.4, 1, 1)});
+        this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: color(1, 0.9, 0, 1)});
         tr = super.get_transform(0, 0, 1.2, .12);
         this.parallelogram.draw(context, program_state, tr, {...this.bg_material, color: color(1, 1, 1, alpha)});
     }

@@ -4,7 +4,7 @@ import {Car, Enemy} from './new_scripts/particle.js';
 import {Simulation} from './new_scripts/simulation.js';
 import {detectTrackCollision, trackCollisionDebug} from './collision/collision-handling.js';
 
-import {GameAnimation, TopBanner, TurnAnimation, UI} from "./ui/ui.js";
+import {GameAnimation, TopBanner, LapAnimation, UI} from "./ui/ui.js";
 import {Scene2Texture} from "./ui/scene2texture.js";
 
 // Pull these names into this module's scope for convenience:
@@ -21,6 +21,7 @@ const TRACK_WALL_HEIGHT = 0.4;
 const TRACK_DIVISIONS = 100;
 
 const NUM_CARS = 4;
+
 
 // UI
 const START_ANIMATION_LENGTH = 4;
@@ -135,9 +136,10 @@ export
 
                 // ui
                 this.game_animation = new GameAnimation();
-                this.turn_animation = new TurnAnimation();
+                this.lap_animation = new LapAnimation();
+                this.laps_completed = 0;
                 this.top_banner = new TopBanner();
-                this.ui = [this.top_banner, this.game_animation, this.turn_animation];
+                this.ui = [this.top_banner, this.game_animation, this.lap_animation];
                 for (let i = 1; i < NUM_CARS; i++) {
                     const enemyPathPoints = [
                         //hermiteCurvePoints[0].plus(vec3((i - 1) * 0.3 * TRACK_WIDTH , 0, (i - 1) * 0.3 * TRACK_WIDTH)),
@@ -260,15 +262,20 @@ export class game_world extends game_world_base {                               
         let t_step = this.t = this.uniforms.animation_time / 1000;
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
-        /**** UI *****/
+        /**** UI setup *****/
         Scene2Texture.draw(caller, this.uniforms);
         if (!this.game_animation.started){
             this.game_animation.start()
-            // this.turn_animation.start();
         }
         this.game_animation.time_now = t_step;
         if (t_step > START_ANIMATION_LENGTH){
             this.game_animation.end()
+        }
+        
+        if (this.simulation.particles[0].laps > this.laps_completed){
+            console.log("lap completed")
+            this.lap_animation.start();
+            this.laps_completed = this.simulation.particles[0].laps;
         }
 
         if (t_step > 3){
@@ -352,7 +359,6 @@ export class game_world extends game_world_base {                               
 
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
-        this.laps_completed = this.simulation.particles[0].laps;
         for (const i in this.ui) {
             this.ui[i].display(caller, this.uniforms);
         }
