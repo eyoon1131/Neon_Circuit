@@ -7,7 +7,7 @@ const { Mat4 } = tiny;
 /* The reason for doing this is to avoid referencing Examples */
 export class CoinShape extends TexturedModel {
     constructor(textureName) {
-        super('/assets/coin.obj','/assets/coin.png',{ ambient: 0.5, diffusivity: 0.3});
+        super('/assets/coin.obj',textureName,{ ambient: 0.5, diffusivity: 0.3});
         this.phase = Math.random();
     }
     draw(caller, uniforms, model_transform) {               // draw(): Same as always for shapes, but cancel all
