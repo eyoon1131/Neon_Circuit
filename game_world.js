@@ -153,7 +153,7 @@ export
                 car.forward_dir = hermiteCurveTangents[0].normalized();
                 car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                 car.delta_pos = vec3(0, 0, 0);
-                car.max_speed = 18;
+                car.max_speed = 19;
                 car.color = blue;
 
                 this.shapes.curves = [];
@@ -469,16 +469,17 @@ export class game_world extends game_world_base {                               
 
         // ui
         UI.update_camera(this.uniforms.camera_inverse);  // Only need to update camera once
-        console.log(this.uniforms.camera_inverse);
+        // console.log(this.uniforms.camera_inverse);
         for (const i in this.ui) {
-            console.log(this.ui[i])
+            // console.log(this.ui[i])
             this.ui[i].draw(caller, this.uniforms);
         }
         // end ui
 
-        for (let i = 0; i < this.shapes.curves.length; i++) {
-            this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6, 0.6, 0.6, 0.99) });
-        }
+        // enemy path debug
+        // for (let i = 0; i < this.shapes.curves.length; i++) {
+        //     this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6, 0.6, 0.6, 0.99) });
+        // }
 
         let finish_line_transform = Mat4.scale(0.2, 0.01, TRACK_WIDTH * 0.5);
         finish_line_transform.pre_multiply(Mat4.rotation(
