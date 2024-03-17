@@ -153,7 +153,7 @@ export
                 car.forward_dir = hermiteCurveTangents[0].normalized();
                 car.scale_factors = vec3(CAR_SCALE, CAR_SCALE, CAR_SCALE);
                 car.delta_pos = vec3(0, 0, 0);
-                car.max_speed = 18;
+                car.max_speed = 19;
                 car.color = blue;
 
                 this.shapes.curves = [];
@@ -471,9 +471,10 @@ export class game_world extends game_world_base {                               
         }
         // end ui
 
-        for (let i = 0; i < this.shapes.curves.length; i++) {
-            this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6, 0.6, 0.6, 0.99) });
-        }
+        // enemy path debug
+        // for (let i = 0; i < this.shapes.curves.length; i++) {
+        //     this.shapes.curves[i].draw(caller, this.uniforms, Mat4.identity(), { ...this.materials.plastic, color: color(0.6, 0.6, 0.6, 0.99) });
+        // }
 
         let finish_line_transform = Mat4.scale(0.2, 0.01, TRACK_WIDTH * 0.5);
         finish_line_transform.pre_multiply(Mat4.rotation(
