@@ -128,7 +128,7 @@ export class TopBanner extends UI {
             }
         };
 
-        this.text = new TextLine('Untitled Marble Racer', "gentleman", text_color, text_border_color);
+        this.text = new TextLine('Marble Neon Circuit', "gentleman", text_color, text_border_color);
         this.text.set_position(0, .99, 0.002);
         this.text.set_extra_space(2.5);
 
@@ -171,7 +171,7 @@ export class TopBanner extends UI {
         this.shapes.square.draw(caller, uniforms, bg_transform, this.materials.background_fade);
 
         // Draw text.
-        this.text.text = `Untitled Marble Racer`;
+        this.text.text = `Marble Neon Circuit`;
         this.text.draw(caller, uniforms);
 
         this.laps_completed.text = `Laps Completed: ${format(caller.laps_completed, 3)}`;
