@@ -95,7 +95,7 @@ export
                 this.simulation.timestep = 0.001;
                 this.simulation.u_kinetic = 0.8;
                 this.simulation.u_static = 0.6;
-                this.simulation.lap_goal =1;
+                this.simulation.lap_goal = 1;
                 // collision handling
                 this.simulation.collision_funcs.push((sim) => detectTrackCollision(sim.particles[0], hermiteFunction, TRACK_WIDTH - TRACK_WALL_WIDTH / 2, 2 * car.scale_factors[0]));
 

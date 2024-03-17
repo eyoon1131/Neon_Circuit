@@ -128,7 +128,7 @@ export class TopBanner extends UI {
             }
         };
 
-        this.text = new TextLine('Untitled Marble Racer', "gentleman", text_color, text_border_color);
+        this.text = new TextLine('Marble Neon Circuit', "gentleman", text_color, text_border_color);
         this.text.set_position(0, .99, 0.002);
         this.text.set_extra_space(2.5);
 
@@ -171,7 +171,7 @@ export class TopBanner extends UI {
         this.shapes.square.draw(caller, uniforms, bg_transform, this.materials.background_fade);
 
         // Draw text.
-        this.text.text = `Untitled Marble Racer`;
+        this.text.text = `Marble Neon Circuit`;
         this.text.draw(caller, uniforms);
 
         this.laps_completed.text = `Laps Completed: ${format(caller.laps_completed, 3)}`;
@@ -397,13 +397,13 @@ export class StartAnimation extends UIAnimation {
         const dt = this.time_now - this.start_time;
         // console.log("Race start draw", dt)
 
-        const ease_func = (x) => 1.5 * Math.pow(2, -5 * x) + 0.5;
+        const ease_func = (x) => Math.pow(2, -5 * x);
 
         const end_time = 1;
 
         let scale;
         if (dt < 3 ) {
-            scale = 0.1 + 0.9 * ease_func((dt / end_time)%1.0);
+            scale = 0.5 + 1.5 * ease_func((dt / end_time)%1.0);
         } else {
             scale = 1 + Math.sin((dt - end_time) * 3) * 0.02;
         }
