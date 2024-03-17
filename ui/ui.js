@@ -194,6 +194,13 @@ export class CarAvatar extends UI {
         this.shapes = {
             circle: new defs.Regular_2D_Polygon(1, 30)
         }
+        this.highlight_material = {
+            shader: new defs.Textured_Phong(1),
+            ambient: 1,
+            diffusivity: 0,
+            specularity: 0,
+            color: YELLOW
+        }
         this.car_materials = {}
         this.car_positions = [-1, -1, -1, -1]
         for (let i = 0; i < 4; i++) {
@@ -257,8 +264,11 @@ export class CarAvatar extends UI {
             avatar_transform.post_multiply(Mat4.scale(avatar_scale, avatar_scale, 1));
             // console.log(this.car_materials[i])
             // console.log(this.car_positions[i])
-            if (this.car_positions[i] !== -1)
+            if (this.car_positions[i] !== -1){
                 this.shapes.circle.draw(caller, uniforms, avatar_transform, this.car_materials[this.car_positions[i]]);
+                if (this.car_positions[i] === 0)
+                    this.shapes.circle.draw(caller, uniforms, avatar_transform.times(Mat4.scale(1.2,1.2,1.2)), this.highlight_material);
+            }
         }
     }
 }
