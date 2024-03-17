@@ -335,8 +335,8 @@ export class game_world extends game_world_base {                               
         let dt = this.dt = Math.min(1 / 30, this.uniforms.animation_delta_time / 1000);
 
         /**** UI setup *****/
-        Scene2Texture.draw(caller, this.uniforms);
         if (!this.start_animation.started) {
+            Scene2Texture.draw(caller, this.uniforms);
             this.start_animation.start()
         }
         this.start_animation.time_now = t_step;
