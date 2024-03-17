@@ -615,8 +615,6 @@ export class TextLine extends UI {
         this.shader.bg_color[3] = alpha;
     }
 
-
-
     /**
      * Set extra spacing between characters.
      * @param extra_space -- The extra spacing between characters

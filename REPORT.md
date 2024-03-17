@@ -68,10 +68,18 @@ to decide the distance with the ground and walls and apply the penalty method.
 
 Since the track can have multiple bumps, bisection won't work.
 
-A simple implementation can be scanning through $[0,1]$ with $n$ discrete points, 
-and then return the point with smallest distance. The quality entirely depends 
-on how many scan-points we have. However, with too few scan points, the quality
-can be concerning (a poorly estimated point can give strange forces); with too 
-many scan points, the smoothness of the game can be impacted, since this is 
-computed every physics update frame. Due to this issue, we must find a way to 
-optimize.
+A simple implementation can be scanning through $[0,1]$ with $n$ discrete points, and then return the point with smallest distance. The quality entirely depends on how many scan-points we have. However, with too few scan points, the quality can be concerning (a poorly estimated point can give strange forces); with too many scan points, the smoothness of the game can be impacted, since this is computed every physics update frame. Due to this issue, we must find a way to optimize.
+
+## UI
+
+### Rendering the basic UI
+
+The idea is that we render the UI based on the camera's position. This is done so through `./ui/ui.js` under `UI` class in `get_transform_custom_cam_projection`. With this function, we can treat the screen as a 2D plane from -1 to 1, allowing us to easily adjust the position of the UI elements.
+
+### Rendering Car avatars for the leaderboard
+
+We do two pass rendering for the car avatars. First we render each of the cars in the scene, then we save them as textures. On the second pass, we draw circles with the generated textures on the leaderboard. This is done in `./ui/ui.js` under `CarAvatar` class as well as `./ui/scene2texture.js`.
+
+### Lap Completion Animation
+
+We use custom parallelogram shape taken from CS 174A to create the banners. We draw three parallelograms for the upper, middle, and lower banners, then we draw the desired text through our `TextLine` class over the banners.
