@@ -70,8 +70,8 @@ export
                         3: new CarShape('RED.png'),
                         4: new CarShape('PUR.png'),
                     },
-                    'coin': new CoinShape('/assets/coin.png'),
-                    'redCoin': new CoinShape('/assets/redcoin.png'),
+                    'coin': new CoinShape('assets/coin.png'),
+                    'redCoin': new CoinShape('assets/redcoin.png'),
                 };
 
                 // *** Materials: ***  A "material" used on individual shapes specifies all fields
